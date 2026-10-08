@@ -4,7 +4,7 @@ Application autonome de messagerie pour les adhérents du club, extraite de la m
 samparis12.org (dossier `SamParis12`). Même principe de structure : un backend Go, un frontend React, une base MySQL.
 
 Sam Link s'appuie sur la base réelle du club, **SamProd26db** : les adhérents sont ceux de la table `profil`,
-et la connexion se fait avec l'e-mail et le mot de passe du site du club. Sam Link **ne modifie aucune table du club** :
+et la connexion se fait avec l'e-mail ou le numéro de licence, et le mot de passe du site du club. Sam Link **ne modifie aucune table du club** :
 il lit `profil` et `adhesion` à travers une vue, et range ses propres données dans des tables à lui.
 
 ## Fonctions
@@ -27,7 +27,7 @@ privés (voir [docs/chiffrement-messages-prives.md](docs/chiffrement-messages-pr
 |---|---|
 | adhérent | `profil.id_profil` |
 | prénom, nom, sexe | `profil.prenom`, `profil.nom`, `profil.sexe` |
-| connexion | `profil.email` + `profil.mdpCrypte` (bcrypt `$2y$`) — la colonne `mdp` n'est jamais lue |
+| connexion | `profil.email`, ou le n° de licence (`profil.numLicence` ou `adhesion.numLicence` de la saison), + `profil.mdpCrypte` (bcrypt `$2y$`) — la colonne `mdp` n'est jamais lue |
 | photo | `profil.photo` (chemin `../Contenus/uploads/profils/…`), affichée depuis `PHOTOS_BASE_URL` |
 | adhérent actif | une adhésion validée pour la saison en cours : `adhesion.saison` = saison, `adhesion.statutAdhesion = 'V'` |
 | groupe | `adhesion.activite` de la saison : RU, RF → Running ; MS, ML → Marche nordique |

@@ -15,7 +15,8 @@ import (
 	"samlink/backend/internal/httpx"
 )
 
-// Connexion avec l'e-mail et le mot de passe du site du club (profil.email, profil.mdpCrypte en bcrypt « $2y$ »).
+// Connexion avec l'e-mail ou le numéro de licence, et le mot de passe du site du club (profil.email, profil.numLicence
+// ou adhesion.numLicence de la saison, profil.mdpCrypte en bcrypt « $2y$ »).
 // Sam Link ne modifie jamais le mot de passe : il se change sur le site du club.
 
 const (
@@ -85,26 +86,38 @@ func (l *Login) reussite(cles ...string) {
 
 func (l *Login) Handle(w http.ResponseWriter, r *http.Request) {
 	var req struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
+		Identifiant string `json:"identifiant"` // e-mail ou numéro de licence
+		Email       string `json:"email"`       // ancien nom du champ
+		Password    string `json:"password"`
 	}
 	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4<<10)).Decode(&req); err != nil {
 		httpx.Error(w, http.StatusBadRequest, "requête invalide")
 		return
 	}
-	email := strings.TrimSpace(req.Email)
-	if email == "" || req.Password == "" {
-		httpx.Error(w, http.StatusBadRequest, "e-mail et mot de passe obligatoires")
+	ident := strings.TrimSpace(req.Identifiant)
+	if ident == "" {
+		ident = strings.TrimSpace(req.Email)
+	}
+	if ident == "" || req.Password == "" {
+		httpx.Error(w, http.StatusBadRequest, "e-mail ou numéro de licence, et mot de passe obligatoires")
 		return
 	}
-	cles := []string{"ip:" + ipDe(r), "mail:" + strings.ToLower(email)}
+	cles := []string{"ip:" + ipDe(r), "id:" + strings.ToLower(ident)}
 	if l.bloque(cles...) {
 		httpx.Error(w, http.StatusTooManyRequests, "trop d'essais : réessaie dans un quart d'heure")
 		return
 	}
 
 	// Une même adresse peut figurer sur plusieurs fiches (famille) : on essaie chacune.
-	rows, err := l.db.Query(`SELECT id, password_hash, is_bureau FROM `+l.vue+` WHERE email = ?`, email)
+	requete := `SELECT id, password_hash, is_bureau FROM ` + l.vue + ` WHERE email = ?`
+	args := []any{ident}
+	if !strings.Contains(ident, "@") {
+		// Numéro de licence : celui de la fiche ou celui de l'adhésion de la saison, espaces ignorés.
+		lic := strings.ToUpper(strings.ReplaceAll(ident, " ", ""))
+		requete = `SELECT id, password_hash, is_bureau FROM ` + l.vue + ` WHERE UPPER(licence) = ? OR UPPER(licence_saison) = ?`
+		args = []any{lic, lic}
+	}
+	rows, err := l.db.Query(requete, args...)
 	if err != nil {
 		log.Printf("auth: connexion : %v", err)
 		httpx.Error(w, http.StatusInternalServerError, "erreur serveur")
@@ -138,5 +151,5 @@ func (l *Login) Handle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	l.echec(cles...)
-	httpx.Error(w, http.StatusUnauthorized, "e-mail ou mot de passe incorrect, ou adhésion non active pour cette saison")
+	httpx.Error(w, http.StatusUnauthorized, "identifiant ou mot de passe incorrect, ou adhésion non active pour cette saison")
 }

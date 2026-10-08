@@ -138,7 +138,7 @@ export function useE2EE(token, meId) {
     try {
       pkcs8 = await exporterPrivee(prive.current.cle)
     } catch {
-      throw new Error("La clé de cet appareil a été créée avant la v1.53.3 et ne peut pas être transmise : utilise la clé de récupération sur le nouvel appareil.")
+      throw new Error("La clé de cet appareil a été créée par une ancienne version et ne peut pas être transmise : utilise la clé de récupération sur le nouvel appareil.")
     }
     const { publique, blob } = await emballerPourLiaison(pkcs8, cible.publicKey, cible.id)
     await api.chatRepondreLiaison(token, cible.id, publique, blob)
@@ -202,7 +202,7 @@ export function useE2EE(token, meId) {
     if (!forcer && vu && Date.now() - vu < 30000) return null
     try {
       const r = await api.chatCleDe(token, idAutre)
-      if (!r.publicKey) throw new Error('pas de clé') // il n'a pas encore ouvert l'espace adhérent
+      if (!r.publicKey) throw new Error('pas de clé') // il n'a pas encore ouvert Sam Link
       absents.current.delete(idAutre)
       const ancienne = autres.current.get(idAutre)
       if (!ancienne || ancienne.publique !== r.publicKey) autres.current.set(idAutre, { publique: r.publicKey, cle: null })

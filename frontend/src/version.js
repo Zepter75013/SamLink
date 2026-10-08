@@ -4,6 +4,11 @@
 
 export const CHANGELOG = [
   {
+    version: '1.2.0',
+    date: '8 octobre 2026',
+    notes: "Connexion avec l'e-mail ou le numéro de licence (celui de la fiche adhérent ou de l'adhésion de la saison), et toujours le mot de passe du site du club. Nouvelle aide « Messages chiffrés » : dans « Mon compte », et par le lien « Comment ça marche ? » des fenêtres du bouton 🔒. Les textes du chiffrement parlent désormais de Sam Link et du bouton 🔒. Aucune migration (la vue des adhérents est recréée au démarrage).",
+  },
+  {
     version: '1.1.2',
     date: '8 octobre 2026',
     notes: "Fenêtre « Mon compte » : « À propos » et « Se déconnecter » deviennent une liste sobre au lieu de deux gros boutons. Dans « À propos », un lien « ‹ Mon compte » ramène à la fenêtre précédente. Aucune migration.",

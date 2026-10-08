@@ -5,6 +5,7 @@ import ChatPanel from './Chat.jsx'
 import { Modal } from './ChatRich.jsx'
 import NotificationsPanel from '../components/NotificationsPanel.jsx'
 import AboutContent from '../components/AboutContent.jsx'
+import AideChiffrement from '../components/AideChiffrement.jsx'
 import { APP_VERSION } from '../version.js'
 
 // Écran principal de Sam Link : la messagerie en plein écran, et un menu (☰) pour le compte, les notifications et « À propos ».
@@ -13,6 +14,7 @@ export default function SamLink({ token, onDeconnexion }) {
   const [members, setMembers] = useState([])
   const [erreur, setErreur] = useState('')
   const [apropos, setApropos] = useState(false)
+  const [aide, setAide] = useState(false)
   const [menu, setMenu] = useState(() => new URLSearchParams(window.location.search).get('reglages') === 'notifications')
   const chat = useChat(token, me?.id)
 
@@ -85,12 +87,21 @@ export default function SamLink({ token, onDeconnexion }) {
               <button type="button" onClick={() => { setMenu(false); setApropos(true) }}>
                 <span>À propos</span><small>v{APP_VERSION} ›</small>
               </button>
+              <button type="button" onClick={() => { setMenu(false); setAide(true) }}>
+                <span>Aide · messages chiffrés</span><small>›</small>
+              </button>
               <button type="button" className="is-sortie" onClick={() => onDeconnexion('')}>
                 <span>Se déconnecter</span>
               </button>
             </nav>
             <NotificationsPanel token={token} />
           </div>
+        </Modal>
+      )}
+      {aide && (
+        <Modal titre="Aide · messages chiffrés" onClose={() => setAide(false)}>
+          <button type="button" className="samlink-retour" onClick={() => { setAide(false); setMenu(true) }}>‹ Mon compte</button>
+          <AideChiffrement />
         </Modal>
       )}
       {apropos && (

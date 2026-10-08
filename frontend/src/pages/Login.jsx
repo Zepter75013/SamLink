@@ -6,7 +6,7 @@ import { APP_VERSION } from '../version.js'
 
 const libelle = { display: 'block', textTransform: 'uppercase', color: 'var(--stone)', letterSpacing: '0.1em', fontSize: '0.7rem' }
 
-// Connexion avec l'e-mail et le mot de passe du site du club. Sam Link ne gère pas les mots de passe :
+// Connexion avec l'e-mail ou le numéro de licence, et le mot de passe du site du club. Sam Link ne gère pas les mots de passe :
 // un oubli se règle sur le site du club.
 export default function Login({ onConnecte, message }) {
   const [email, setEmail] = useState('')
@@ -48,10 +48,10 @@ export default function Login({ onConnecte, message }) {
 
           <form onSubmit={handleLogin} style={{ display: 'grid', gap: '1.2rem', fontFamily: 'var(--font-mono)', fontSize: '0.75rem' }}>
             <div>
-              <label htmlFor="login-email" style={libelle}>E-mail</label>
+              <label htmlFor="login-email" style={libelle}>E-mail ou n° de licence</label>
               <input
                 id="login-email"
-                type="email"
+                type="text"
                 className="login-input"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -59,7 +59,7 @@ export default function Login({ onConnecte, message }) {
                 autoCapitalize="none"
                 autoCorrect="off"
                 spellCheck={false}
-                placeholder="prenom.nom@exemple.fr"
+                placeholder="prenom.nom@exemple.fr ou 1234567"
                 required
               />
             </div>

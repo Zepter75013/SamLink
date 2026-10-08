@@ -26,8 +26,8 @@ export const chatFileUrl = (u) => (u && u.startsWith('/') ? `${BASE_URL.replace(
 
 export const api = {
   // Connexion avec l'e-mail et le mot de passe du site du club.
-  login: (email, password) =>
-    request('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
+  login: (identifiant, password) =>
+    request('/auth/login', { method: 'POST', body: JSON.stringify({ identifiant, password }) }),
   getMe: (token) => request('/me', { token }),
   listMembres: (token) => request('/membres', { token }),
 

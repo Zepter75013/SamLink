@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import PasswordField from '../components/PasswordField.jsx'
 import { formaterCle, formaterCodeLiaison, normaliserCode } from '../lib/e2ee.js'
+import AideChiffrement from '../components/AideChiffrement.jsx'
 import { Modal } from './ChatRich.jsx'
 
 // Interface du chiffrement de bout en bout des messages privés : bandeau d'activation ou de déverrouillage en haut de la
@@ -97,7 +98,7 @@ function FormLiaison({ e2ee, onFini, onRetour }) {
   }
   return (
     <form className="chiffre-form" onSubmit={soumettre}>
-      <p>Sur le <b>nouvel appareil</b>, ouvre Sam Link puis <b>Déverrouiller › Obtenir un code de liaison</b>, et saisis ici le code qui s'affiche.</p>
+      <p>Sur le <b>nouvel appareil</b>, ouvre Sam Link, touche <b>🔒 › Obtenir un code de liaison</b>, et saisis ici le code qui s'affiche.</p>
       <label>Code de liaison
         <input className="roles-input chiffre-cle" value={code} onChange={(e) => setCode((avant) => formaterCodeLiaison(e.target.value, avant))}
           placeholder="XXXXX-XXXXX" maxLength={11} autoComplete="off" autoCapitalize="characters" autoCorrect="off" spellCheck={false} autoFocus />
@@ -110,7 +111,7 @@ function FormLiaison({ e2ee, onFini, onRetour }) {
 }
 
 // Deux façons de déverrouiller un nouvel appareil : avec un autre appareil déjà déverrouillé (code à saisir là-bas), ou avec la clé de récupération
-function ModalDeverrouiller({ e2ee, onClose }) {
+function ModalDeverrouiller({ e2ee, onClose, onAide }) {
   const [occupe, setOcc] = useState(false)
   const [err, setErr] = useState('')
   const [oubli, setOubli] = useState(false)
@@ -144,7 +145,7 @@ function ModalDeverrouiller({ e2ee, onClose }) {
     return (
       <Modal titre="Lier avec un autre appareil" onClose={() => { annuler(); onClose() }}>
         <div className="chiffre-corps">
-          <p>Sur ton <b>autre appareil déjà déverrouillé</b> (ordinateur ou téléphone), ouvre Sam Link puis <b>Gérer › Lier un nouvel appareil</b> et saisis ce code :</p>
+          <p>Sur ton <b>autre appareil déjà déverrouillé</b> (ordinateur ou téléphone), ouvre Sam Link, touche <b>🔒 › Lier un nouvel appareil</b> et saisis ce code :</p>
           <p className="chiffre-empreinte" aria-live="polite">{liaison.code || '…'}</p>
           <p className="chiffre-note">En attente de l'autre appareil… Ce code est valable 5 minutes. Cet écran se ferme tout seul dès que c'est fait.</p>
           <button type="button" className="btn btn--ghost" onClick={annuler} style={{ justifyContent: 'center' }}>Annuler</button>
@@ -156,6 +157,7 @@ function ModalDeverrouiller({ e2ee, onClose }) {
     <Modal titre="Déverrouiller mes messages privés" onClose={onClose}>
       <div className="chiffre-corps">
         <p>Pour lire tes messages chiffrés sur cet appareil, choisis l'une des deux possibilités :</p>
+        {onAide && <button type="button" className="link-button samlink-aide__lien" onClick={onAide}>❓ Comment ça marche ?</button>}
         <div className="chiffre-option">
           <b>① Avec un autre appareil</b>
           <small>Tu as déjà un appareil déverrouillé sous la main : il transmet la clé à celui-ci, rien à noter ni à taper.</small>
@@ -163,7 +165,7 @@ function ModalDeverrouiller({ e2ee, onClose }) {
         </div>
         <div className="chiffre-option">
           <b>② Avec ta clé de récupération</b>
-          <small>Elle ressemble à XXXX-XXXX-XXXX-XXXX-XXXX : elle t'a été montrée une seule fois, sur le premier appareil où tu as ouvert l'espace adhérent.</small>
+          <small>Elle ressemble à XXXX-XXXX-XXXX-XXXX-XXXX : elle t'a été montrée une seule fois, sur le premier appareil où tu as ouvert Sam Link.</small>
           <FormCle onSubmit={deverrouiller} occupe={occupe} />
         </div>
         {err && <p className="chiffre-err" role="alert">{err}</p>}
@@ -171,7 +173,7 @@ function ModalDeverrouiller({ e2ee, onClose }) {
           ? <button type="button" className="link-button" onClick={() => setOubli(true)}>Je n'ai ni autre appareil, ni clé de récupération</button>
           : (
             <div className="chiffre-danger">
-              <p><b>Si un de tes appareils est encore déverrouillé</b> : ouvre-y Sam Link, <b>Gérer › Générer une nouvelle clé de récupération</b>, note-la, puis saisis-la ici. Tes messages sont conservés.</p><p><b>Sinon, tes anciens messages chiffrés ne peuvent pas être récupérés</b> (ni par toi, ni par le bureau). Tu peux repartir de zéro avec de nouvelles clés : tes interlocuteurs devront accepter ta nouvelle clé.</p>
+              <p><b>Si un de tes appareils est encore déverrouillé</b> : ouvre-y Sam Link, <b>🔒 › Générer une nouvelle clé de récupération</b>, note-la, puis saisis-la ici. Tes messages sont conservés.</p><p><b>Sinon, tes anciens messages chiffrés ne peuvent pas être récupérés</b> (ni par toi, ni par le bureau). Tu peux repartir de zéro avec de nouvelles clés : tes interlocuteurs devront accepter ta nouvelle clé.</p>
               <button type="button" className="btn btn--ghost" onClick={async () => { await e2ee.reinitialiser(); onClose() }}>Repartir de zéro (nouvelles clés)</button>
             </div>
           )}
@@ -180,7 +182,7 @@ function ModalDeverrouiller({ e2ee, onClose }) {
   )
 }
 
-function ModalGerer({ e2ee, chat, onClose, onRecup }) {
+function ModalGerer({ e2ee, chat, onClose, onRecup, onAide }) {
   const [vue, setVue] = useState('menu')
   const [msg, setMsg] = useState(null)
   const [occupe, setOcc] = useState(false)
@@ -207,6 +209,7 @@ function ModalGerer({ e2ee, chat, onClose, onRecup }) {
     <Modal titre="Mes messages privés chiffrés" onClose={onClose}>
       <div className="chiffre-corps">
         <p>Le chiffrement de bout en bout est <b>activé automatiquement</b> et cet appareil est déverrouillé.</p>
+        {onAide && <button type="button" className="link-button samlink-aide__lien" onClick={onAide}>❓ Comment ça marche ?</button>}
         {msg && <p className={msg.ok ? 'chiffre-ok' : 'chiffre-err'} role="status">{msg.texte}</p>}
         {vue === 'menu' && (
           <div className="chiffre-actions">
@@ -278,8 +281,9 @@ export function BoutonChiffrement({ chat }) {
         <span aria-hidden="true">🔒</span>{alerte && <i className={`chat-cle__pastille chat-cle__pastille--${alerte}`} />}
       </button>
       {modal === 'recup' && <ModalRecuperation e2ee={e2ee} onClose={() => setModal(null)} />}
-      {modal === 'deverrouiller' && <ModalDeverrouiller e2ee={e2ee} onClose={() => setModal(null)} />}
-      {modal === 'gerer' && <ModalGerer e2ee={e2ee} chat={chat} onClose={() => setModal(null)} onRecup={() => setModal('recup')} />}
+      {modal === 'deverrouiller' && <ModalDeverrouiller e2ee={e2ee} onClose={() => setModal(null)} onAide={() => setModal('aide')} />}
+      {modal === 'gerer' && <ModalGerer e2ee={e2ee} chat={chat} onClose={() => setModal(null)} onRecup={() => setModal('recup')} onAide={() => setModal('aide')} />}
+      {modal === 'aide' && <Modal titre="Aide · messages chiffrés" onClose={() => setModal(null)}><AideChiffrement /></Modal>}
     </>
   )
 }
@@ -325,7 +329,7 @@ export function CadenasDiscussion({ chat, room, statut, actualiser }) {
                 <button type="button" className="btn btn--solid" onClick={async () => { await chat.e2ee.accepterCle(room); await actualiser(true); setOuvert(false) }}>Les empreintes sont identiques : accepter la nouvelle clé</button>
               </>
             )}
-            {statut.statut === 'autre-absent' && <p>🔓 <b>{room.nom}</b> ne s'est pas encore connecté depuis l'activation du chiffrement : vos messages sont envoyés <b>en clair</b> (lisibles par le serveur) tant que ce n'est pas fait. Le chiffrement s'active tout seul dès qu'il ouvre l'espace adhérent.</p>}
+            {statut.statut === 'autre-absent' && <p>🔓 <b>{room.nom}</b> ne s'est pas encore connecté depuis l'activation du chiffrement : vos messages sont envoyés <b>en clair</b> (lisibles par le serveur) tant que ce n'est pas fait. Le chiffrement s'active tout seul dès qu'il ouvre Sam Link.</p>}
             {statut.statut === 'moi-absent' && <p>🔓 Le chiffrement de bout en bout n'est pas actif sur cet appareil (navigateur trop ancien, ou activation en cours) : tes messages privés sont envoyés <b>en clair</b>. Recharge la page ; si cela persiste, utilise un navigateur récent.</p>}
             {statut.statut === 'moi-verrouille' && (
               <>

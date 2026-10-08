@@ -1,4 +1,4 @@
-// Présence dans l'espace adhérent : cercle de couleur autour de la photo et texte « Vu hier à 14:09 ».
+// Présence dans Sam Link : cercle de couleur autour de la photo et texte « Vu hier à 14:09 ».
 // Ancienneté de la dernière présence : moins de 5 minutes → vert (en ligne), de 5 à 10 minutes → orange (a été connecté),
 // plus de 10 minutes ou jamais vu → rouge (non connecté).
 

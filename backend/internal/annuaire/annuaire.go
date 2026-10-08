@@ -71,6 +71,7 @@ func DefinitionVue(cfg config.Config) string {
 	}
 	return fmt.Sprintf(`CREATE OR REPLACE SQL SECURITY INVOKER VIEW %s AS
 		SELECT p.id_profil AS id, p.prenom, p.nom, p.email, p.mdpCrypte AS password_hash,
+			TRIM(p.numLicence) AS licence, TRIM(COALESCE(a.numLicence, '')) AS licence_saison,
 			%s AS photo_path,
 			CASE a.activite
 				WHEN 'RU' THEN 'Running' WHEN 'RF' THEN 'Running'
