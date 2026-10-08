@@ -82,6 +82,8 @@ func NewRouter(db *sql.DB, cfg config.Config) http.Handler {
 	mux.HandleFunc("PUT /api/chat/messages/{id}/star", authService.RequireAuth(chatHandler.Star))
 	mux.HandleFunc("GET /api/chat/messages/{id}/info", authService.RequireAuth(chatHandler.Info))
 	mux.HandleFunc("GET /api/chat/stars", authService.RequireAuth(chatHandler.StarsList))
+	mux.HandleFunc("PUT /api/chat/messages/{id}/live", authService.RequireAuth(chatHandler.LiveUpdate))
+	mux.HandleFunc("DELETE /api/chat/messages/{id}/live", authService.RequireAuth(chatHandler.LiveStop))
 	mux.HandleFunc("GET /api/chat/ice", authService.RequireAuth(chatHandler.ICEServers))
 	mux.HandleFunc("POST /api/chat/rooms/{id}/call", authService.RequireAuth(chatHandler.Signal))
 	mux.HandleFunc("POST /api/chat/rooms/{id}/mute", authService.RequireAuth(chatHandler.Mute))

@@ -53,8 +53,10 @@ export const api = {
   chatPresence: (token) => request('/chat/presence', { method: 'POST', token }),
   chatRooms: (token) => request('/chat/rooms', { token }),
   chatMessages: (token, roomId, before) => request(`/chat/rooms/${roomId}/messages${before ? `?before=${before}` : ''}`, { token }),
-  chatSend: (token, roomId, texte, replyTo, { mentions = [], forwarded = false } = {}) =>
-    request(`/chat/rooms/${roomId}/messages`, { method: 'POST', token, body: JSON.stringify({ texte, replyTo: replyTo || 0, mentions, forwarded }) }),
+  chatSend: (token, roomId, texte, replyTo, { mentions = [], forwarded = false, live = 0 } = {}) =>
+    request(`/chat/rooms/${roomId}/messages`, { method: 'POST', token, body: JSON.stringify({ texte, replyTo: replyTo || 0, mentions, forwarded, live }) }),
+  chatLive: (token, messageId, position) => request(`/chat/messages/${messageId}/live`, { method: 'PUT', token, body: JSON.stringify({ position }) }),
+  chatLiveStop: (token, messageId) => request(`/chat/messages/${messageId}/live`, { method: 'DELETE', token }),
   chatReact: (token, messageId, emoji) => request(`/chat/messages/${messageId}/reaction`, { method: 'PUT', token, body: JSON.stringify({ emoji }) }),
   chatForward: (token, messageId, roomIds) => request(`/chat/messages/${messageId}/forward`, { method: 'POST', token, body: JSON.stringify({ roomIds }) }),
   chatPin: (token, messageId, pinned) => request(`/chat/messages/${messageId}/pin`, { method: 'PUT', token, body: JSON.stringify({ pinned }) }),

@@ -237,6 +237,7 @@ func (h *Handler) Send(w http.ResponseWriter, r *http.Request) {
 		ReplyTo   int64   `json:"replyTo"`
 		Mentions  []int64 `json:"mentions"`  // adhérents mentionnés (@Prénom Nom) : notifiés même en sourdine
 		Forwarded bool    `json:"forwarded"` // texte transféré depuis une autre discussion
+		Live      int     `json:"live"`      // position en direct : durée du partage en minutes (15, 60 ou 480)
 	}
 	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 48<<10)).Decode(&in); err != nil {
 		httpx.Error(w, http.StatusBadRequest, "requête invalide")
@@ -252,6 +253,15 @@ func (h *Handler) Send(w http.ResponseWriter, r *http.Request) {
 	}
 	if in.Forwarded && h.repo.MarkForwarded(msg.ID) == nil {
 		msg.Forwarded = true
+	}
+	if dureesLive[in.Live] {
+		if err := h.repo.StartLive(msg, in.Live); err != nil {
+			h.fail(w, err)
+			return
+		}
+		if l, err := h.repo.lives([]int64{msg.ID}); err == nil {
+			msg.Live = l[msg.ID]
+		}
 	}
 	if ids, err := h.repo.MemberIDs(rr); err == nil {
 		h.hub.publish(h.repo.Visible(rr.id, ids), "message", map[string]any{"roomId": rr.id, "message": msg})

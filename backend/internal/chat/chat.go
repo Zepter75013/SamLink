@@ -84,6 +84,7 @@ type Message struct {
 	Reactions   []Reaction   `json:"reactions"`
 	Forwarded   bool         `json:"forwarded"` // transféré depuis une autre discussion
 	Starred     bool         `json:"starred"`   // marqué important par l'adhérent qui consulte
+	Live        *Live        `json:"live"`      // position en direct (message « 📡 Position en direct »)
 	CreatedAt   time.Time    `json:"createdAt"`
 }
 

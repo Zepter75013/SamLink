@@ -5,7 +5,7 @@ import { apercu } from '../lib/chat.js'
 import { niveauPresence, derniereConnexion, dureeDeconnexion } from '../lib/presence.js'
 import { BoutonChiffrement, CadenasDiscussion, useStatutDM } from './ChatChiffrement.jsx'
 import { BarreReactions, Reactions, TexteRiche, BarreRecherche, SuggestionsMention, Transfert, InfoMessage, ListeImportants, mentionEnCours, normaliser, texteCherchable } from './ChatSocial.jsx'
-import { CartePosition, ModalPosition, lirePosition } from './ChatPosition.jsx'
+import { CarteDirect, CartePosition, ModalPosition, lirePosition } from './ChatPosition.jsx'
 import { Enregistreur, vocalDisponible } from './ChatVocal.jsx'
 import { AppelsProvider, useAppels } from './Appels.jsx'
 import { Modal, AttachMenu, Attachments, Lightbox, PollCard, EventCard, PollModal, EventModal, taille, iconeFichier } from './ChatRich.jsx'
@@ -111,20 +111,21 @@ function Coches({ message, room, otherRead }) {
 }
 
 function Bulle({ message, room, me, otherRead, onReply, onEdit, onDelete, onVote, onRsvp, onOpenImage, onBroken, showAuteur,
-  reacting, onReacting, onReact, onForward, recherche, trouve, epingle, onPin, onQuote, onStar, onInfo }) {
-  const position = !message.deleted && (!message.kind || message.kind === 'text') ? lirePosition(message.texte) : null
+  reacting, onReacting, onReact, onForward, recherche, trouve, epingle, onPin, onQuote, onStar, onInfo, onStopLive }) {
+  const live = !message.deleted && message.live ? message.live : null
+  const position = !live && !message.deleted && (!message.kind || message.kind === 'text') ? lirePosition(message.texte) : null
   const mine = message.senderId === me.id
   const actif = !message.deleted && !message.pending && !message.failed
   const maReaction = message.reactions?.find((r) => r.ids.includes(me.id))?.emoji
   // transférables : textes lisibles, photos et documents non chiffrés
-  const transferable = actif && !message.illisible && ((!message.kind || message.kind === 'text') ? !!message.texte : message.kind === 'media' && !message.chiffre)
+  const transferable = actif && !live && !message.illisible && ((!message.kind || message.kind === 'text') ? !!message.texte : message.kind === 'media' && !message.chiffre)
   // l'auteur peut modifier / supprimer tant que personne d'autre n'a lu ; le bureau peut toujours supprimer (modération)
-  const modifiable = mine && actif && message.id > otherRead && (!message.kind || message.kind === 'text') // seuls les textes se modifient
+  const modifiable = mine && actif && !live && message.id > otherRead && (!message.kind || message.kind === 'text') // seuls les textes se modifient
   const supprimable = mine && actif && message.id > otherRead
   const canDelete = actif && (supprimable || !!me.features?.includes('messagerie.moderer'))
   return (
     <div className={`chat-row${mine ? ' is-mine' : ''}${message.reactions?.length && !message.deleted ? ' has-reactions' : ''}`} data-msg={message.id}>
-      <div className={`chat-bubble${mine ? ' is-mine' : ''}${message.deleted ? ' is-deleted' : ''}${(message.kind && message.kind !== 'text' && !message.deleted) || position ? ' is-rich' : ''}${trouve ? ' is-found' : ''}`} tabIndex={0}>
+      <div className={`chat-bubble${mine ? ' is-mine' : ''}${message.deleted ? ' is-deleted' : ''}${(message.kind && message.kind !== 'text' && !message.deleted) || position || live ? ' is-rich' : ''}${trouve ? ' is-found' : ''}`} tabIndex={0}>
         {message.forwarded && !message.deleted && <span className="chat-forwarded">↪ Transféré</span>}
         {!mine && showAuteur && room.kind !== 'dm' && (
           <b className="chat-author" style={{ color: couleurDe(message.senderId) }}>{message.auteur}</b>
@@ -141,7 +142,8 @@ function Bulle({ message, room, me, otherRead, onReply, onEdit, onDelete, onVote
             {message.kind === 'poll' && message.poll && <PollCard message={message} onVote={onVote} />}
             {message.kind === 'event' && message.event && <EventCard message={message} onRsvp={onRsvp} />}
             {position && <CartePosition pos={position} />}
-            {message.texte && !position && <TexteRiche texte={message.texte} monNom={`${me.prenom || ''} ${me.nom || ''}`.trim()} recherche={recherche} />}
+            {live && <CarteDirect live={live} mine={mine} onStop={() => onStopLive(message)} />}
+            {message.texte && !position && !live && <TexteRiche texte={message.texte} monNom={`${me.prenom || ''} ${me.nom || ''}`.trim()} recherche={recherche} />}
           </>
         )}
         <span className="chat-meta">
@@ -722,7 +724,8 @@ function Conversation({ chat, room, token, me, members, onBack, onUnarchived }) 
               onBroken={recharger}
               reacting={reagir === it.m.id} onReacting={setReagir} onReact={reagirA} onForward={setTransfert}
               recherche={recherche?.trim() || ''} trouve={it.m.id === idTrouve || it.m.id === eclaire}
-              epingle={idsEpingles.has(it.m.id)} onPin={epingler} onQuote={setCible} onStar={marquer} onInfo={setInfo} />))}
+              epingle={idsEpingles.has(it.m.id)} onPin={epingler} onQuote={setCible} onStar={marquer} onInfo={setInfo}
+              onStopLive={(m) => chat.arreterLive(m.id)} />))}
       </div>
 
       {err && <p className="chat-error chat-error--bar">{err} <button type="button" onClick={() => setErr('')}>✕</button></p>}
@@ -788,7 +791,9 @@ function Conversation({ chat, room, token, me, members, onBack, onUnarchived }) 
       {visionneuse && <Lightbox images={visionneuse.images} index={visionneuse.index} onClose={() => setVisionneuse(null)} />}
 
       {info && chargerInfo && <InfoMessage message={conv.messages.find((m) => m.id === info.id) || info} charger={chargerInfo} onClose={() => setInfo(null)} />}
-      {modal === 'position' && <ModalPosition onClose={() => setModal(null)} onSend={(t) => chat.send(room.id, t, reply).then(() => { setReply(null); bas.current = true })} />}
+      {modal === 'position' && <ModalPosition onClose={() => setModal(null)}
+        onLive={(min) => chat.demarrerLive(room.id, min, reply).then(() => { setReply(null); bas.current = true })}
+        onSend={(t) => chat.send(room.id, t, reply).then(() => { setReply(null); bas.current = true })} />}
       {transfert && (
         <Transfert message={transfert} rooms={chat.rooms} onClose={() => setTransfert(null)}
           onSend={async (ids) => { await chat.forward(transfert, ids); if (ids.includes(room.id)) bas.current = true }} />

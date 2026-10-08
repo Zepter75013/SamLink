@@ -294,8 +294,15 @@ func (r *Repository) enrich(msgs []Message, viewer int64) error {
 	if err != nil {
 		return err
 	}
+	lv, err := r.lives(ids)
+	if err != nil {
+		return err
+	}
 	for i := range msgs {
 		msgs[i].Starred = st[msgs[i].ID]
+		if !msgs[i].Deleted {
+			msgs[i].Live = lv[msgs[i].ID]
+		}
 	}
 	return nil
 }

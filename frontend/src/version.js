@@ -4,6 +4,11 @@
 
 export const CHANGELOG = [
   {
+    version: '1.7.0',
+    date: '9 octobre 2026',
+    notes: "Position en direct : ＋ › Position › « Partager ma position en direct » pendant 15 minutes, 1 heure ou 8 heures. La bulle montre une carte qui suit tes déplacements (« En direct jusqu'à 18:30 · mis à jour à l'instant ») et le bouton « Arrêter le partage » ; à la fin, la dernière position reste affichée. La position n'est envoyée que tant que Sam Link reste ouvert sur ton téléphone (un site web ne peut pas suivre la position en arrière-plan). Chiffrée dans les messages privés chiffrés. Migration à appliquer (0005 : une nouvelle table, chat_live).",
+  },
+  {
     version: '1.6.1',
     date: '9 octobre 2026',
     notes: "Le menu ⋮ d'une discussion s'ouvre de nouveau par-dessus la conversation (l'en-tête reprenait par erreur le style du bandeau du site, qui le cachait sur certains navigateurs). La fenêtre « Mon compte » est plus large et plus haute : tout tient sans défiler sur ordinateur. Aucune migration.",

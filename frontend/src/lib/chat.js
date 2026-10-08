@@ -62,7 +62,7 @@ export function useChat(token, meId) {
   // Messages privés chiffrés : déchiffrés ici, dans le navigateur, avant d'entrer dans l'état de l'écran.
   // Un message qu'on ne peut pas lire (appareil verrouillé, clé réinitialisée) devient un texte de remplacement.
   const clair = useCallback(async (roomId, m) => {
-    if (!estChiffre(m.texte) && !(m.reply && estChiffre(m.reply.texte))) return m
+    if (!estChiffre(m.texte) && !(m.reply && estChiffre(m.reply.texte)) && !(m.live && estChiffre(m.live.position))) return m
     const room = roomsRef.current.find((r) => r.id === roomId)
     if (!room || room.kind !== 'dm') return m
     const lire = async (t) => { try { return await e2eeRef.current.dechiffrerPour(room, t) } catch { return null } }
@@ -91,6 +91,7 @@ export function useChat(token, meId) {
         if (t == null) out.illisible = true
       }
     }
+    if (m.live && estChiffre(m.live.position)) out.live = { ...m.live, position: (await lire(m.live.position)) ?? '' }
     if (m.reply && estChiffre(m.reply.texte)) {
       const t = await lire(m.reply.texte)
       const citation = t == null ? null : (citationDescription(t) ?? t)
@@ -260,6 +261,11 @@ export function useChat(token, meId) {
         refreshRooms().catch(() => {})
       } else if (event === 'call') {
         appelsRef.current?.(data)
+      } else if (event === 'live') {
+        let live = data.live
+        if (live && estChiffre(live.position)) live = (await clairRef.current(data.roomId, { texte: '', live })).live
+        patchConv(data.roomId, (c) => ({ ...c, messages: c.messages.map((m) => (m.id === data.messageId ? { ...m, live } : m)) }))
+        if (live && !live.actif) arreterLocal.current?.(data.messageId)
       } else if (event === 'stars') {
         // marqué important depuis un autre appareil
         setConvs((cs) => Object.fromEntries(Object.entries(cs).map(([k, c]) => [k, { ...c, messages: c.messages.map((m) => (m.id === data.messageId ? { ...m, starred: data.starred } : m)) }])))
@@ -503,6 +509,65 @@ export function useChat(token, meId) {
   }, [loadConv])
   const oublierCible = useCallback(() => setCibleGlobale(null), [])
 
+  // ---- Position en direct : ce navigateur envoie la position de l'adhérent pour chacun de ses partages en cours ----
+  // (gardés dans le navigateur pour reprendre après un rechargement ; un site web ne peut pas suivre la position
+  // quand il est fermé ou en arrière-plan)
+  const [partages, setPartages] = useState(() => {
+    try { return (JSON.parse(localStorage.getItem('samlink-live') || '[]') || []).filter((p) => new Date(p.jusqua) > new Date()) } catch { return [] }
+  })
+  const partagesRef = useRef(partages)
+  partagesRef.current = partages
+  useEffect(() => {
+    try { localStorage.setItem('samlink-live', JSON.stringify(partages)) } catch { /* stockage indisponible */ }
+  }, [partages])
+  const arreterLocal = useRef(null)
+  arreterLocal.current = (messageId) => setPartages((l) => (l.some((p) => p.messageId === messageId) ? l.filter((p) => p.messageId !== messageId) : l))
+  const envoisLive = useRef({}) // messageId -> { at, lat, lon, attente }
+  const envoyerPosition = useCallback(async (p, coords) => {
+    const prec = envoisLive.current[p.messageId]
+    const now = Date.now()
+    const bouge = !prec || Math.hypot((coords.latitude - prec.lat) * 111000, (coords.longitude - prec.lon) * 111000 * Math.cos((coords.latitude * Math.PI) / 180)) > 15
+    if (prec && !bouge && now - prec.at < 30000) return
+    if (prec && now - prec.at < 5000) {
+      // trop tôt : la dernière position connue part dès que possible (le navigateur ne redonne rien si on ne bouge plus)
+      clearTimeout(prec.attente)
+      prec.attente = setTimeout(() => { if (partagesRef.current.some((x) => x.messageId === p.messageId)) envoyerPosition(p, coords) }, 5000 - (now - prec.at) + 50)
+      return
+    }
+    clearTimeout(prec?.attente)
+    envoisLive.current[p.messageId] = { at: now, lat: coords.latitude, lon: coords.longitude }
+    try {
+      const pos = JSON.stringify({ lat: +coords.latitude.toFixed(6), lon: +coords.longitude.toFixed(6), acc: Math.round(coords.accuracy || 0) })
+      await api.chatLive(token, p.messageId, await preparer(p.roomId, pos))
+    } catch (e) {
+      if (e.status === 409 || e.status === 403 || e.status === 404) arreterLocal.current(p.messageId)
+    }
+  }, [token, preparer])
+  const actifs = partages.length > 0
+  useEffect(() => {
+    if (!actifs || !token || !navigator.geolocation) return undefined
+    const id = navigator.geolocation.watchPosition((pos) => {
+      const now = new Date()
+      for (const p of partagesRef.current) {
+        if (new Date(p.jusqua) <= now) { arreterLocal.current(p.messageId); continue }
+        envoyerPosition(p, pos.coords)
+      }
+    }, () => {}, { enableHighAccuracy: true, maximumAge: 5000, timeout: 30000 })
+    return () => navigator.geolocation.clearWatch(id)
+  }, [actifs, token, envoyerPosition])
+
+  const demarrerLive = useCallback(async (roomId, minutes, reply) => {
+    const brut = await api.chatSend(token, roomId, await preparer(roomId, '📡 Position en direct'), reply ? reply.id : 0, { live: minutes })
+    const msg = await clair(roomId, brut)
+    patchConv(roomId, (c) => (c.messages.some((m) => m.id === msg.id) ? c : { ...c, messages: [...c.messages, msg] }))
+    setPartages((l) => [...l, { messageId: msg.id, roomId, jusqua: brut.live?.jusqua || new Date(Date.now() + minutes * 60000).toISOString() }])
+  }, [token, preparer, clair, patchConv])
+  const arreterLive = useCallback(async (messageId) => {
+    arreterLocal.current(messageId)
+    await api.chatLiveStop(token, messageId)
+  }, [token])
+  const partageIci = useCallback((messageId) => partages.some((p) => p.messageId === messageId), [partages])
+
   // Sourdine : plus de notification pour cette discussion (sauf quand on me mentionne).
   const mute = useCallback(async (roomId, muted) => {
     await api.chatMute(token, roomId, muted)
@@ -545,5 +610,5 @@ export function useChat(token, meId) {
     return a == null ? null : a + (Date.now() - presence.at) / 1000
   }, [presence])
 
-  return { e2ee, chiffrerHistorique, historiqueAuto, presenceDe, rooms, canCreate, loaded, convs, openId, openRoom, loadMore, send, remove, edit, archive, removeRoom, sendMedia, sendPoll, sendEvent, vote, rsvp, react, typing, quiEcrit, forward, mute, pin, appelsRef, star, importants, cible, allerAuMessage, oublierCible, refreshRooms, unreadTotal, markAllRead, setPanelOpen, online }
+  return { e2ee, chiffrerHistorique, historiqueAuto, presenceDe, rooms, canCreate, loaded, convs, openId, openRoom, loadMore, send, remove, edit, archive, removeRoom, sendMedia, sendPoll, sendEvent, vote, rsvp, react, typing, quiEcrit, forward, mute, pin, appelsRef, star, importants, cible, allerAuMessage, oublierCible, demarrerLive, arreterLive, partageIci, refreshRooms, unreadTotal, markAllRead, setPanelOpen, online }
 }
