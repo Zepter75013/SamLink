@@ -83,6 +83,7 @@ type Message struct {
 	Event       *EventInfo   `json:"event"`
 	Reactions   []Reaction   `json:"reactions"`
 	Forwarded   bool         `json:"forwarded"` // transféré depuis une autre discussion
+	Starred     bool         `json:"starred"`   // marqué important par l'adhérent qui consulte
 	CreatedAt   time.Time    `json:"createdAt"`
 }
 

@@ -42,6 +42,9 @@ const ICO = {
   photos: (
     <svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3" fill="#3b82f6" /><circle cx="9" cy="9" r="2" fill="#fff" /><path d="M4 18l5-5 3.5 3.5L16 13l4 5Z" fill="#fff" /></svg>
   ),
+  position: (
+    <svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><path d="M12 2a7 7 0 0 1 7 7c0 5.2-7 13-7 13S5 14.2 5 9a7 7 0 0 1 7-7Z" fill="#1fa855" /><circle cx="12" cy="9" r="2.6" fill="#fff" /></svg>
+  ),
   sondage: (
     <svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><rect x="3" y="5" width="13" height="3.2" rx="1.6" fill="#f5bf3c" /><rect x="3" y="10.4" width="18" height="3.2" rx="1.6" fill="#f5bf3c" /><rect x="3" y="15.8" width="9" height="3.2" rx="1.6" fill="#f5bf3c" /></svg>
   ),
@@ -62,6 +65,7 @@ export function AttachMenu({ onPick, onClose, chiffre = false }) {
   const items = [
     ['fichier', 'Fichier'],
     ['photos', 'Photos et vidéos'],
+    ['position', 'Position'],
     ...(chiffre ? [] : [['sondage', 'Sondage'], ['evenement', 'Événement']]), // le serveur verrait un sondage ou un événement
   ]
   return (

@@ -7,6 +7,7 @@ import { decrire, verifierDescription, citationDescription } from './fichiersSur
 // Aperçu d'un message dans la liste des discussions.
 export function apercu(m) {
   if (estChiffre(m.texte)) return '🔒 Message chiffré'
+  if (m.kind !== 'media' && typeof m.texte === 'string' && m.texte.startsWith('📍') && m.texte.includes('openstreetmap.org/?mlat=')) return '📍 Position'
   if (m.kind === 'poll') return `📊 ${m.poll?.question || 'Sondage'}`
   if (m.kind === 'event') return `📅 ${m.event?.titre || 'Événement'}`
   if (m.kind === 'media') {
@@ -259,6 +260,9 @@ export function useChat(token, meId) {
         refreshRooms().catch(() => {})
       } else if (event === 'call') {
         appelsRef.current?.(data)
+      } else if (event === 'stars') {
+        // marqué important depuis un autre appareil
+        setConvs((cs) => Object.fromEntries(Object.entries(cs).map(([k, c]) => [k, { ...c, messages: c.messages.map((m) => (m.id === data.messageId ? { ...m, starred: data.starred } : m)) }])))
       } else if (event === 'pins') {
         const pinned = await Promise.all((data.pinned || []).map((m) => clairRef.current(data.roomId, m)))
         if (convsRef.current[data.roomId]) patchConv(data.roomId, (c) => ({ ...c, pinned }))
@@ -481,6 +485,24 @@ export function useChat(token, meId) {
     patchConv(roomId, (c) => ({ ...c, pinned: liste }))
   }, [token, patchConv, clairs])
 
+  // Messages importants (étoile), propres à chaque adhérent
+  const star = useCallback(async (roomId, messageId, starred) => {
+    await api.chatStar(token, messageId, starred)
+    patchConv(roomId, (c) => ({ ...c, messages: c.messages.map((m) => (m.id === messageId ? { ...m, starred } : m)) }))
+  }, [token, patchConv])
+  const importants = useCallback(async () => {
+    const { messages } = await api.chatStars(token)
+    return Promise.all((messages || []).map((m) => clair(m.roomId, m)))
+  }, [token, clair])
+  // ouvrir une discussion sur un message précis (liste des messages importants)
+  const [cible, setCibleGlobale] = useState(null)
+  const allerAuMessage = useCallback((roomId, messageId) => {
+    setOpenIdState(roomId)
+    loadConv(roomId)
+    setCibleGlobale({ roomId, messageId })
+  }, [loadConv])
+  const oublierCible = useCallback(() => setCibleGlobale(null), [])
+
   // Sourdine : plus de notification pour cette discussion (sauf quand on me mentionne).
   const mute = useCallback(async (roomId, muted) => {
     await api.chatMute(token, roomId, muted)
@@ -523,5 +545,5 @@ export function useChat(token, meId) {
     return a == null ? null : a + (Date.now() - presence.at) / 1000
   }, [presence])
 
-  return { e2ee, chiffrerHistorique, historiqueAuto, presenceDe, rooms, canCreate, loaded, convs, openId, openRoom, loadMore, send, remove, edit, archive, removeRoom, sendMedia, sendPoll, sendEvent, vote, rsvp, react, typing, quiEcrit, forward, mute, pin, appelsRef, refreshRooms, unreadTotal, markAllRead, setPanelOpen, online }
+  return { e2ee, chiffrerHistorique, historiqueAuto, presenceDe, rooms, canCreate, loaded, convs, openId, openRoom, loadMore, send, remove, edit, archive, removeRoom, sendMedia, sendPoll, sendEvent, vote, rsvp, react, typing, quiEcrit, forward, mute, pin, appelsRef, star, importants, cible, allerAuMessage, oublierCible, refreshRooms, unreadTotal, markAllRead, setPanelOpen, online }
 }

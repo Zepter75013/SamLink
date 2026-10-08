@@ -120,3 +120,28 @@
   .chat-conv__head .chiffre-cadenas__txt { display: none; } /* le cadenas seul suffit sur téléphone */
   .chat-call-btns button { padding: 0.3rem 0.25rem; font-size: 1.05rem; }
 }
+
+/* ---- Position partagée, messages importants, infos d'un message (1.6) ---- */
+.chat-position { display: flex; flex-direction: column; gap: 0.3rem; margin-bottom: 0.15rem; }
+.chat-position > a { display: block; border-radius: 6px; overflow: hidden; }
+.chat-carte { position: relative; overflow: hidden; border-radius: 6px; background: #e5e3df; }
+.chat-carte__tuiles { position: absolute; left: 50%; top: 50%; width: 768px; height: 768px; }
+.chat-carte__tuiles img { position: absolute; width: 256px; height: 256px; max-width: none; user-select: none; }
+.chat-carte__pin { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -92%); font-size: 2rem; filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.35)); pointer-events: none; }
+.chat-carte__credit { position: absolute; right: 3px; bottom: 2px; font-size: 0.58rem; color: #333; background: rgba(255, 255, 255, 0.75); padding: 0 3px; border-radius: 3px; }
+.chat-position__titre { font-size: 0.88rem; font-weight: 600; }
+.chat-position__liens { display: flex; flex-wrap: wrap; gap: 0.35rem 0.8rem; font-size: 0.8rem; }
+.chat-position__liens a { color: var(--c-accent); font-weight: 600; text-decoration: none; }
+.chat-stars-btn { border: 0; background: none; font-size: 1.1rem; padding: 0.3rem 0.35rem; margin-right: 0.15rem; border-radius: 50%; }
+.chat-stars-btn:hover { background: var(--c-sel); }
+.chat-star-row { display: flex; align-items: stretch; border-bottom: 1px solid var(--c-line); }
+.chat-star-row__msg { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.15rem; padding: 0.55rem 0.7rem; border: 0; background: none; text-align: left; }
+.chat-star-row__msg:hover { background: var(--c-hover); }
+.chat-star-row__msg small { color: var(--c-sub); font-size: 0.74rem; }
+.chat-star-row__msg span { font-size: 0.9rem; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; white-space: pre-wrap; overflow-wrap: anywhere; }
+.chat-star-row__del { border: 0; background: none; color: var(--c-sub); padding: 0 0.8rem; }
+.chat-info__titre { margin: 0.7rem 0.6rem 0.2rem; font-size: 0.8rem; font-weight: 700; color: var(--c-accent); text-transform: uppercase; letter-spacing: 0.03em; }
+.chat-info__reac { margin: 0.2rem 0.7rem; font-size: 0.88rem; }
+/* barre d'actions d'un message reçu : alignée à gauche de la bulle, pour ne pas sortir de l'écran */
+.chat-bubble:not(.is-mine) .chat-actions { right: auto; left: 4px; }
+.chat-actions { flex-wrap: wrap; max-width: calc(100vw - 2rem); }

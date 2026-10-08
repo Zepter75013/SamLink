@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Modal } from './ChatRich.jsx'
 
 // Fonctions « à la WhatsApp » de la messagerie : réactions, transfert, recherche dans une discussion, mentions @.
@@ -182,6 +182,75 @@ export function Transfert({ message, rooms, onSend, onClose }) {
       <button type="button" className="btn btn--solid chat-create" disabled={busy || choisis.length === 0} onClick={envoyer}>
         {busy ? 'Transfert…' : `Transférer${choisis.length ? ` (${choisis.length})` : ''}`}
       </button>
+    </Modal>
+  )
+}
+
+// Infos d'un de mes messages : qui l'a lu, qui a réagi.
+export function InfoMessage({ message, charger, onClose }) {
+  const [info, setInfo] = useState(null)
+  const [err, setErr] = useState('')
+  useEffect(() => { charger().then(setInfo).catch((e) => setErr(e.message)) }, [charger])
+  const resume = message.texte ? (message.texte.length > 120 ? `${message.texte.slice(0, 120)}…` : message.texte) : '📎 Pièce jointe'
+  return (
+    <Modal titre="Infos du message" onClose={onClose}>
+      <p className="chat-forward__apercu">{resume}</p>
+      {err && <p className="chat-error">{err}</p>}
+      {!info && !err && <p className="chat-empty">Chargement…</p>}
+      {info && (
+        <div className="chat-pick">
+          <p className="chat-info__titre">✓✓ Lu par {info.lus.length}</p>
+          {info.lus.map((p) => (
+            <div key={p.id} className="chat-pick__row is-static">
+              {p.photoUrl ? <img className="chat-avatar" src={p.photoUrl} alt="" style={{ width: 32, height: 32 }} /> : <span className="chat-avatar chat-avatar--init" style={{ width: 32, height: 32, fontSize: 12 }}>{p.nom.split(' ').map((w) => w[0]).slice(0, 2).join('')}</span>}
+              <span className="chat-pick__nom">{p.nom}</span>
+            </div>
+          ))}
+          {info.lus.length === 0 && <p className="chat-empty">Personne ne l'a encore lu.</p>}
+          {info.nonLus > 0 && <p className="chat-info__titre">✓ Pas encore lu : {info.nonLus} participant{info.nonLus > 1 ? 's' : ''}</p>}
+          {message.reactions?.length > 0 && (
+            <>
+              <p className="chat-info__titre">Réactions</p>
+              {message.reactions.map((r) => <p key={r.emoji} className="chat-info__reac"><b>{r.emoji}</b> {r.noms.join(', ')}</p>)}
+            </>
+          )}
+        </div>
+      )}
+    </Modal>
+  )
+}
+
+// Liste des messages importants (⭐) de toutes les discussions.
+export function ListeImportants({ chat, onClose }) {
+  const [liste, setListe] = useState(null)
+  const [err, setErr] = useState('')
+  const { importants } = chat
+  useEffect(() => { importants().then(setListe).catch((e) => setErr(e.message)) }, [importants])
+  async function retirer(m) {
+    try {
+      await chat.star(m.roomId, m.id, false)
+      setListe((l) => l.filter((x) => x.id !== m.id))
+    } catch (e) { setErr(e.message) }
+  }
+  const quand = (iso) => new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+  return (
+    <Modal titre="⭐ Messages importants" onClose={onClose}>
+      {err && <p className="chat-error">{err}</p>}
+      {!liste && !err && <p className="chat-empty">Chargement…</p>}
+      {liste && liste.length === 0 && <p className="chat-empty">Aucun message important. Marque un message avec ⭐ pour le retrouver ici.</p>}
+      {liste && liste.length > 0 && (
+        <div className="chat-pick">
+          {liste.map((m) => (
+            <div key={m.id} className="chat-star-row">
+              <button type="button" className="chat-star-row__msg" onClick={() => { chat.allerAuMessage(m.roomId, m.id); onClose() }}>
+                <small>{m.auteur} › {m.roomNom} · {quand(m.createdAt)}</small>
+                <span>{m.kind === 'poll' ? `📊 ${m.poll?.question || 'Sondage'}` : m.kind === 'event' ? `📅 ${m.event?.titre || 'Événement'}` : m.texte?.startsWith('📍') ? '📍 Position' : m.texte || (m.attachments?.[0]?.mime?.startsWith('audio/') ? '🎤 Message vocal' : `📎 ${m.attachments?.[0]?.nom || 'Pièce jointe'}`)}</span>
+              </button>
+              <button type="button" className="chat-star-row__del" onClick={() => retirer(m)} aria-label="Retirer des messages importants" title="Retirer">✕</button>
+            </div>
+          ))}
+        </div>
+      )}
     </Modal>
   )
 }

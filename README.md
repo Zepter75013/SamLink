@@ -11,7 +11,7 @@ il lit `profil` et `adhesion` à travers une vue, et range ses propres données 
 
 Salons automatiques (Tous les adhérents, Running, Marche nordique, Bureau), salons créés, messages privés, réponses,
 modification et suppression, archivage, lus / non lus, pièces jointes (photos, vidéos, documents), sondages,
-événements avec réponses, appels audio et vidéo dans les messages privés, messages vocaux, messages épinglés, réactions emoji, « en train d'écrire », sourdine, transfert de messages, recherche dans une
+événements avec réponses, appels audio et vidéo dans les messages privés, messages vocaux, messages épinglés, partage de position, messages importants, détail « lu par », réactions emoji, « en train d'écrire », sourdine, transfert de messages, recherche dans une
 discussion, mentions @, présence en ligne, notifications push et e-mail, chiffrement de bout en bout des messages
 privés (voir [docs/chiffrement-messages-prives.md](docs/chiffrement-messages-prives.md)). Application installable
 (PWA) sur téléphone.
@@ -57,7 +57,7 @@ INSERT INTO chat_droits (member_id, creer_salons, moderer) VALUES (<id_profil>, 
 `chat_messages`, `chat_reads`, `chat_room_prefs`, `chat_attachments`, `chat_polls`, `chat_poll_options`,
 `chat_poll_votes`, `chat_events`, `chat_event_rsvps`, `chat_droits`, `notif_prefs`, `push_subscriptions`,
 `notifications`, `member_presence`, `member_keys`, `device_links`, puis (migration `0002_reactions_sourdine.sql`)
-`chat_reactions`, `chat_mutes`, `chat_forwarded`, puis (`0003_epingles.sql`) `chat_pins`, plus la vue `samlink_membres`. Leurs clés étrangères
+`chat_reactions`, `chat_mutes`, `chat_forwarded`, puis (`0003_epingles.sql`) `chat_pins`, puis (`0004_importants.sql`) `chat_stars`, plus la vue `samlink_membres`. Leurs clés étrangères
 pointent vers `profil(id_profil)` (suppression d'une fiche = suppression de ses messages).
 
 ## Développement local

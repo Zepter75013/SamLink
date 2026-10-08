@@ -283,7 +283,21 @@ func (r *Repository) enrich(msgs []Message, viewer int64) error {
 		}
 		rows.Close()
 	}
-	return r.enrichSocial(msgs)
+	if err := r.enrichSocial(msgs); err != nil {
+		return err
+	}
+	ids := make([]int64, len(msgs))
+	for i, m := range msgs {
+		ids[i] = m.ID
+	}
+	st, err := r.starred(viewer, ids)
+	if err != nil {
+		return err
+	}
+	for i := range msgs {
+		msgs[i].Starred = st[msgs[i].ID]
+	}
+	return nil
 }
 
 // MessageFull : un message avec ses pièces jointes, sondage et événement.

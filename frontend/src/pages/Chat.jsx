@@ -4,7 +4,8 @@ import { RunnerFigure } from '../components/Legs.jsx'
 import { apercu } from '../lib/chat.js'
 import { niveauPresence, derniereConnexion, dureeDeconnexion } from '../lib/presence.js'
 import { BoutonChiffrement, CadenasDiscussion, useStatutDM } from './ChatChiffrement.jsx'
-import { BarreReactions, Reactions, TexteRiche, BarreRecherche, SuggestionsMention, Transfert, mentionEnCours, normaliser, texteCherchable } from './ChatSocial.jsx'
+import { BarreReactions, Reactions, TexteRiche, BarreRecherche, SuggestionsMention, Transfert, InfoMessage, ListeImportants, mentionEnCours, normaliser, texteCherchable } from './ChatSocial.jsx'
+import { CartePosition, ModalPosition, lirePosition } from './ChatPosition.jsx'
 import { Enregistreur, vocalDisponible } from './ChatVocal.jsx'
 import { AppelsProvider, useAppels } from './Appels.jsx'
 import { Modal, AttachMenu, Attachments, Lightbox, PollCard, EventCard, PollModal, EventModal, taille, iconeFichier } from './ChatRich.jsx'
@@ -110,7 +111,8 @@ function Coches({ message, room, otherRead }) {
 }
 
 function Bulle({ message, room, me, otherRead, onReply, onEdit, onDelete, onVote, onRsvp, onOpenImage, onBroken, showAuteur,
-  reacting, onReacting, onReact, onForward, recherche, trouve, epingle, onPin, onQuote }) {
+  reacting, onReacting, onReact, onForward, recherche, trouve, epingle, onPin, onQuote, onStar, onInfo }) {
+  const position = !message.deleted && (!message.kind || message.kind === 'text') ? lirePosition(message.texte) : null
   const mine = message.senderId === me.id
   const actif = !message.deleted && !message.pending && !message.failed
   const maReaction = message.reactions?.find((r) => r.ids.includes(me.id))?.emoji
@@ -122,7 +124,7 @@ function Bulle({ message, room, me, otherRead, onReply, onEdit, onDelete, onVote
   const canDelete = actif && (supprimable || !!me.features?.includes('messagerie.moderer'))
   return (
     <div className={`chat-row${mine ? ' is-mine' : ''}${message.reactions?.length && !message.deleted ? ' has-reactions' : ''}`} data-msg={message.id}>
-      <div className={`chat-bubble${mine ? ' is-mine' : ''}${message.deleted ? ' is-deleted' : ''}${message.kind && message.kind !== 'text' && !message.deleted ? ' is-rich' : ''}${trouve ? ' is-found' : ''}`} tabIndex={0}>
+      <div className={`chat-bubble${mine ? ' is-mine' : ''}${message.deleted ? ' is-deleted' : ''}${(message.kind && message.kind !== 'text' && !message.deleted) || position ? ' is-rich' : ''}${trouve ? ' is-found' : ''}`} tabIndex={0}>
         {message.forwarded && !message.deleted && <span className="chat-forwarded">↪ Transféré</span>}
         {!mine && showAuteur && room.kind !== 'dm' && (
           <b className="chat-author" style={{ color: couleurDe(message.senderId) }}>{message.auteur}</b>
@@ -138,10 +140,12 @@ function Bulle({ message, room, me, otherRead, onReply, onEdit, onDelete, onVote
             {message.kind === 'media' && <Attachments items={message.attachments || []} onOpenImage={onOpenImage} onBroken={onBroken} />}
             {message.kind === 'poll' && message.poll && <PollCard message={message} onVote={onVote} />}
             {message.kind === 'event' && message.event && <EventCard message={message} onRsvp={onRsvp} />}
-            {message.texte && <TexteRiche texte={message.texte} monNom={`${me.prenom || ''} ${me.nom || ''}`.trim()} recherche={recherche} />}
+            {position && <CartePosition pos={position} />}
+            {message.texte && !position && <TexteRiche texte={message.texte} monNom={`${me.prenom || ''} ${me.nom || ''}`.trim()} recherche={recherche} />}
           </>
         )}
         <span className="chat-meta">
+          {message.starred && !message.deleted && <span className="chat-pin-mini" title="Message important">⭐</span>}
           {epingle && !message.deleted && <span className="chat-pin-mini" title="Message épinglé">📌</span>}
           {message.chiffre && !message.deleted && <span className="chat-lock-mini" title="Message chiffré de bout en bout">🔒</span>}
           {message.edited && !message.deleted && <em>modifié</em>}
@@ -153,6 +157,8 @@ function Bulle({ message, room, me, otherRead, onReply, onEdit, onDelete, onVote
             <button type="button" title="Réagir" onClick={() => onReacting(reacting ? null : message.id)}>😊</button>
             <button type="button" title="Répondre" onClick={() => onReply(message)}>↩</button>
             {transferable && <button type="button" title="Transférer" onClick={() => onForward(message)}>↪</button>}
+            <button type="button" title={message.starred ? 'Retirer des messages importants' : 'Marquer comme important'} onClick={() => onStar(message, !message.starred)}>{message.starred ? '✩' : '⭐'}</button>
+            {mine && room.kind !== 'dm' && <button type="button" title="Infos : qui l'a lu" onClick={() => onInfo(message)}>ℹ️</button>}
             {room.canPin && <button type="button" title={epingle ? 'Désépingler' : 'Épingler'} onClick={() => onPin(message, !epingle)}>{epingle ? '📍' : '📌'}</button>}
             {modifiable && <button type="button" title="Modifier" onClick={() => onEdit(message)}>✏️</button>}
             {canDelete && <button type="button" title="Supprimer" onClick={() => onDelete(message)}>🗑</button>}
@@ -351,6 +357,7 @@ function Conversation({ chat, room, token, me, members, onBack, onUnarchived }) 
   const [recherche, setRecherche] = useState(null) // null : fermée ; sinon le texte cherché
   const [trouve, setTrouve] = useState(0) // index du résultat affiché (0 = le plus récent)
   const [mention, setMention] = useState(null) // { debut, q } : « @… » en cours de saisie
+  const [info, setInfo] = useState(null) // message dont on regarde « lu par »
   const [vocal, setVocal] = useState(false) // enregistrement d'un message vocal en cours
   const [cible, setCible] = useState(null) // message à rejoindre (épinglé, citation) : l'historique est chargé jusqu'à lui
   const [eclaire, setEclaire] = useState(null) // message mis en évidence un instant après l'avoir rejoint
@@ -536,7 +543,7 @@ function Conversation({ chat, room, token, me, members, onBack, onUnarchived }) 
       pagesCherchees.current = 0
       return
     }
-    if (conv.loading) return
+    if (conv.loading || !conv.loaded) return
     if (!conv.more || pagesCherchees.current >= 20) { setErr('Ce message est trop ancien pour être affiché ici.'); setCible(null); pagesCherchees.current = 0; return }
     pagesCherchees.current += 1
     chat.loadMore(room.id)
@@ -546,6 +553,18 @@ function Conversation({ chat, room, token, me, members, onBack, onUnarchived }) 
     const t = setTimeout(() => setEclaire(null), 1800)
     return () => clearTimeout(t)
   }, [eclaire])
+
+  // arrivée depuis la liste des messages importants
+  const { cible: cibleGlobale, oublierCible } = chat
+  useEffect(() => {
+    if (cibleGlobale?.roomId !== room.id) return
+    setCible(cibleGlobale.messageId)
+    oublierCible()
+  }, [cibleGlobale, room.id, oublierCible])
+  async function marquer(m, oui) {
+    try { await chat.star(room.id, m.id, oui) } catch (e) { setErr(e.message) }
+  }
+  const chargerInfo = useMemo(() => (info ? () => api.chatInfo(token, info.id) : null), [info, token])
 
   const epingles = conv.pinned || []
   const idsEpingles = useMemo(() => new Set(epingles.map((m) => m.id)), [epingles])
@@ -703,7 +722,7 @@ function Conversation({ chat, room, token, me, members, onBack, onUnarchived }) 
               onBroken={recharger}
               reacting={reagir === it.m.id} onReacting={setReagir} onReact={reagirA} onForward={setTransfert}
               recherche={recherche?.trim() || ''} trouve={it.m.id === idTrouve || it.m.id === eclaire}
-              epingle={idsEpingles.has(it.m.id)} onPin={epingler} onQuote={setCible} />))}
+              epingle={idsEpingles.has(it.m.id)} onPin={epingler} onQuote={setCible} onStar={marquer} onInfo={setInfo} />))}
       </div>
 
       {err && <p className="chat-error chat-error--bar">{err} <button type="button" onClick={() => setErr('')}>✕</button></p>}
@@ -768,6 +787,8 @@ function Conversation({ chat, room, token, me, members, onBack, onUnarchived }) 
       {modal === 'evenement' && <EventModal onClose={() => setModal(null)} onSend={(d) => chat.sendEvent(room.id, { ...d, replyTo: reply ? reply.id : 0 }).then(() => { setReply(null); bas.current = true })} />}
       {visionneuse && <Lightbox images={visionneuse.images} index={visionneuse.index} onClose={() => setVisionneuse(null)} />}
 
+      {info && chargerInfo && <InfoMessage message={conv.messages.find((m) => m.id === info.id) || info} charger={chargerInfo} onClose={() => setInfo(null)} />}
+      {modal === 'position' && <ModalPosition onClose={() => setModal(null)} onSend={(t) => chat.send(room.id, t, reply).then(() => { setReply(null); bas.current = true })} />}
       {transfert && (
         <Transfert message={transfert} rooms={chat.rooms} onClose={() => setTransfert(null)}
           onSend={async (ids) => { await chat.forward(transfert, ids); if (ids.includes(room.id)) bas.current = true }} />
@@ -794,6 +815,7 @@ function ChatPanelInterne({ chat, token, me, members, onMenu }) {
   const [q, setQ] = useState('')
   const [nouveau, setNouveau] = useState(false)
   const [showArchived, setShowArchived] = useState(false)
+  const [importants, setImportants] = useState(false)
   const { setPanelOpen } = chat
 
   // en plein écran la page derrière ne défile pas
@@ -841,6 +863,7 @@ function ChatPanelInterne({ chat, token, me, members, onMenu }) {
               ? <button type="button" className="chat-list__back" onClick={() => setShowArchived(false)}>← Archivées</button>
               : <b>Discussions</b>}
             <span className="chat-list__actions">
+              <button type="button" className="chat-stars-btn" onClick={() => setImportants(true)} title="Messages importants" aria-label="Messages importants">⭐</button>
               <BoutonChiffrement chat={chat} />
               <button type="button" className="chat-new" onClick={() => setNouveau(true)} title="Nouvelle discussion" aria-label="Nouvelle discussion">＋</button>
             </span>
@@ -883,6 +906,7 @@ function ChatPanelInterne({ chat, token, me, members, onMenu }) {
           ? <Conversation key={current.id} chat={chat} room={current} token={token} me={me} members={members} onBack={() => chat.openRoom(null)} onUnarchived={() => setShowArchived(false)} />
           : <section className="chat-conv chat-conv--vide"><p>Sélectionne une discussion<br />ou démarre-en une avec ＋</p></section>}
       </div>
+      {importants && <ListeImportants chat={chat} onClose={() => setImportants(false)} />}
       {nouveau && <NouvelleDiscussion chat={chat} token={token} me={me} members={members} onClose={() => setNouveau(false)} />}
     </div>
   )

@@ -4,6 +4,11 @@
 
 export const CHANGELOG = [
   {
+    version: '1.6.0',
+    date: '9 octobre 2026',
+    notes: "Partage de position : ＋ › Position envoie ta position actuelle, affichée comme une carte dans la bulle avec des liens Google Maps, Plans et Waze (chiffrée dans les messages privés chiffrés). Messages importants : bouton ⭐ d'un message, et liste de tous tes messages importants avec le bouton ⭐ en haut des discussions (un clic ouvre la discussion sur le message). Infos d'un message : dans un salon, le bouton ℹ️ de tes messages montre qui les a lus et qui n'a pas encore lu, ainsi que les réactions. Migration à appliquer (0004 : une nouvelle table, chat_stars).",
+  },
+  {
     version: '1.5.1',
     date: '9 octobre 2026',
     notes: "Sur téléphone, le menu ⋮ d'une discussion privée était poussé hors de l'écran par les boutons d'appel : il reste maintenant toujours visible (le nom se raccourcit et le cadenas n'affiche plus que son icône). Aucune migration.",
