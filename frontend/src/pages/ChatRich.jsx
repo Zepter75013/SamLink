@@ -10,10 +10,10 @@ import { chatFileUrl } from '../lib/api.js'
 // Fenêtre de la messagerie. Elle est rangée dans le bloc de la messagerie (pour garder ses couleurs) mais en dehors du bandeau ou
 // de la liste d'où elle est ouverte : un parent qui a un filtre (« backdrop-filter » du bandeau d'une discussion sur téléphone)
 // devient sinon le repère de la fenêtre « fixe », qui se retrouve coupée en haut de l'écran.
-export function Modal({ titre, onClose, children }) {
+export function Modal({ titre, onClose, children, large = false }) {
   const fenetre = (
     <div className="chat-modal" onClick={onClose}>
-      <div className="chat-modal__box" role="dialog" aria-modal="true" aria-label={titre} onClick={(e) => e.stopPropagation()}>
+      <div className={`chat-modal__box${large ? ' is-large' : ''}`} role="dialog" aria-modal="true" aria-label={titre} onClick={(e) => e.stopPropagation()}>
         <div className="chat-modal__head">
           <b>{titre}</b>
           <BoutonFermer onClick={onClose} />

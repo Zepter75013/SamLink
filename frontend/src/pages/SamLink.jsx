@@ -77,7 +77,7 @@ export default function SamLink({ token, onDeconnexion }) {
     <>
       <ChatPanel chat={chat} token={token} me={me} members={members} onMenu={() => setMenu(true)} />
       {menu && (
-        <Modal titre="Mon compte" onClose={() => setMenu(false)}>
+        <Modal titre="Mon compte" onClose={() => setMenu(false)} large>
           <div className="samlink-compte">
             <p>
               Connecté en tant que <b>{me.prenom} {me.nom}</b>

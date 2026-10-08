@@ -116,7 +116,7 @@ export default function NotificationsPanel({ token }) {
       {prefs && (
         <table className="notif-table">
           <thead>
-            <tr><th>Je veux être prévenu…</th><th>Notification</th><th>E-mail</th></tr>
+            <tr><th>Prévenu pour…</th><th>Notif.</th><th>E-mail</th></tr>
           </thead>
           <tbody>
             {TYPES.map((t) => (

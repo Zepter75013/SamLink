@@ -145,3 +145,22 @@
 /* barre d'actions d'un message reçu : alignée à gauche de la bulle, pour ne pas sortir de l'écran */
 .chat-bubble:not(.is-mine) .chat-actions { right: auto; left: 4px; }
 .chat-actions { flex-wrap: wrap; max-width: calc(100vw - 2rem); }
+
+/* ---- 1.6.1 ---- */
+/* L'en-tête d'une discussion est une balise <header> : il héritait du style du bandeau du site (sticky, flou, débordement
+   coupé), ce qui cachait le menu ⋮ sous le bandeau sur certains navigateurs. */
+.chat header.chat-conv__head, .chat header.chat-list__head { position: relative; top: auto; z-index: 30; overflow: visible; backdrop-filter: none; }
+.chat-menu { z-index: 60; }
+
+/* Fenêtre « Mon compte » : plus large et plus haute, les notifications tiennent sans être tassées */
+.chat-modal__box.is-large { width: min(600px, 100%); max-height: min(860px, 92vh); max-height: min(860px, 92dvh); }
+.chat-modal__box.is-large .samlink-compte { padding: 1.1rem 1.4rem 1.4rem; }
+.samlink-compte .notif-bloc { margin: 0; padding: 1.1rem 1.2rem; border-radius: 12px; }
+.samlink-compte .notif-table th:first-child { white-space: nowrap; }
+@media (max-width: 600px) {
+  .chat-modal:has(.is-large) { padding: 0.5rem; }
+  .chat-modal__box.is-large { width: 100%; max-height: calc(100dvh - 1rem); }
+  .chat-modal__box.is-large .samlink-compte { padding: 0.9rem 0.9rem 1.1rem; }
+  .samlink-compte .notif-bloc { padding: 0.9rem 0.8rem; }
+  .samlink-compte .notif-table th, .samlink-compte .notif-table td { padding-inline: 0.3rem; }
+}

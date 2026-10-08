@@ -4,6 +4,11 @@
 
 export const CHANGELOG = [
   {
+    version: '1.6.1',
+    date: '9 octobre 2026',
+    notes: "Le menu ⋮ d'une discussion s'ouvre de nouveau par-dessus la conversation (l'en-tête reprenait par erreur le style du bandeau du site, qui le cachait sur certains navigateurs). La fenêtre « Mon compte » est plus large et plus haute : tout tient sans défiler sur ordinateur. Aucune migration.",
+  },
+  {
     version: '1.6.0',
     date: '9 octobre 2026',
     notes: "Partage de position : ＋ › Position envoie ta position actuelle, affichée comme une carte dans la bulle avec des liens Google Maps, Plans et Waze (chiffrée dans les messages privés chiffrés). Messages importants : bouton ⭐ d'un message, et liste de tous tes messages importants avec le bouton ⭐ en haut des discussions (un clic ouvre la discussion sur le message). Infos d'un message : dans un salon, le bouton ℹ️ de tes messages montre qui les a lus et qui n'a pas encore lu, ainsi que les réactions. Migration à appliquer (0004 : une nouvelle table, chat_stars).",
