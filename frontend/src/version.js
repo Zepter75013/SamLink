@@ -4,6 +4,11 @@
 
 export const CHANGELOG = [
   {
+    version: '1.1.1',
+    date: '8 octobre 2026',
+    notes: "Le logo du club s'affiche de nouveau sur la page de connexion (ainsi que les icônes de l'application installée), et l'adresse de contact passe sous « Besoin d'aide pour vous connecter ? ». Aucune migration.",
+  },
+  {
     version: '1.1.0',
     date: '8 octobre 2026',
     notes: "Fenêtre « À propos » dans le menu ☰, avec la version de Sam Link et l'historique des nouveautés. Mise en ligne sur le NAS du club (Docker, base dans le conteneur bdd-mysql) à l'adresse https://samlink.juliotte-app.fr. Aucune migration.",

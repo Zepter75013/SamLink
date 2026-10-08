@@ -24,6 +24,9 @@ FROM nginx:alpine
 RUN rm -f /etc/nginx/conf.d/default.conf
 
 COPY --from=builder /app/dist /usr/share/nginx/html
+# Les fichiers venant du Mac peuvent être en lecture réservée à leur propriétaire (logo, icônes, sw.js) :
+# nginx doit pouvoir tous les lire.
+RUN chmod -R a+rX /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
