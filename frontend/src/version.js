@@ -6,7 +6,7 @@ export const CHANGELOG = [
   {
     version: '1.1.1',
     date: '8 octobre 2026',
-    notes: "Le logo du club s'affiche de nouveau sur la page de connexion (ainsi que les icônes de l'application installée), et l'adresse de contact passe sous « Besoin d'aide pour vous connecter ? ». Aucune migration.",
+    notes: "Le logo du club s'affiche de nouveau sur la page de connexion (ainsi que les icônes de l'application installée), et l'adresse de contact passe sous « Besoin d'aide pour vous connecter ? ». Dans « Nouvelle discussion », le bouton « Créer le salon » n'est plus collé au bord bas de la fenêtre. Aucune migration.",
   },
   {
     version: '1.1.0',
