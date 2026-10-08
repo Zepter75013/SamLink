@@ -4,6 +4,11 @@
 
 export const CHANGELOG = [
   {
+    version: '1.3.0',
+    date: '8 octobre 2026',
+    notes: "Fonctions à la WhatsApp : réactions sur les messages (bouton 😊 d'un message, puis 👍 ❤️ 😂 😮 😢 🙏 ou plus) ; « Prénom écrit… » en haut de la discussion et dans la liste ; mise en sourdine d'une discussion (menu ⋮, plus de notification sauf quand on te mentionne) ; transfert d'un message, d'une photo ou d'un document vers une ou plusieurs discussions (bouton ↪, mention « Transféré ») ; recherche dans la discussion ouverte (menu ⋮ › 🔍) ; mentions @ dans les salons (taper @ puis choisir le participant : il est prévenu même en sourdine). Migration à appliquer (0002 : trois nouvelles tables, aucune table existante modifiée).",
+  },
+  {
     version: '1.2.0',
     date: '8 octobre 2026',
     notes: "Connexion avec l'e-mail ou le numéro de licence (celui de la fiche adhérent ou de l'adhésion de la saison), et toujours le mot de passe du site du club. Nouvelle aide « Messages chiffrés » : dans « Mon compte », et par le lien « Comment ça marche ? » des fenêtres du bouton 🔒. Les textes du chiffrement parlent désormais de Sam Link et du bouton 🔒. Aucune migration (la vue des adhérents est recréée au démarrage).",

@@ -53,8 +53,12 @@ export const api = {
   chatPresence: (token) => request('/chat/presence', { method: 'POST', token }),
   chatRooms: (token) => request('/chat/rooms', { token }),
   chatMessages: (token, roomId, before) => request(`/chat/rooms/${roomId}/messages${before ? `?before=${before}` : ''}`, { token }),
-  chatSend: (token, roomId, texte, replyTo) =>
-    request(`/chat/rooms/${roomId}/messages`, { method: 'POST', token, body: JSON.stringify({ texte, replyTo: replyTo || 0 }) }),
+  chatSend: (token, roomId, texte, replyTo, { mentions = [], forwarded = false } = {}) =>
+    request(`/chat/rooms/${roomId}/messages`, { method: 'POST', token, body: JSON.stringify({ texte, replyTo: replyTo || 0, mentions, forwarded }) }),
+  chatReact: (token, messageId, emoji) => request(`/chat/messages/${messageId}/reaction`, { method: 'PUT', token, body: JSON.stringify({ emoji }) }),
+  chatForward: (token, messageId, roomIds) => request(`/chat/messages/${messageId}/forward`, { method: 'POST', token, body: JSON.stringify({ roomIds }) }),
+  chatTyping: (token, roomId) => request(`/chat/rooms/${roomId}/typing`, { method: 'POST', token }),
+  chatMute: (token, roomId, muted) => request(`/chat/rooms/${roomId}/mute`, { method: 'POST', token, body: JSON.stringify({ muted }) }),
   chatRead: (token, roomId, upTo) => request(`/chat/rooms/${roomId}/read`, { method: 'POST', token, body: JSON.stringify({ upTo }) }),
   chatEdit: (token, messageId, texte) => request(`/chat/messages/${messageId}`, { method: 'PUT', token, body: JSON.stringify({ texte }) }),
   chatArchive: (token, roomId, archived) =>

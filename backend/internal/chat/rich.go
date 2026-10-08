@@ -281,7 +281,7 @@ func (r *Repository) enrich(msgs []Message, viewer int64) error {
 		}
 		rows.Close()
 	}
-	return nil
+	return r.enrichSocial(msgs)
 }
 
 // MessageFull : un message avec ses pièces jointes, sondage et événement.

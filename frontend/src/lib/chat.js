@@ -43,6 +43,7 @@ export function useChat(token, meId) {
   const e2ee = useE2EE(token, meId)
   const e2eeRef = useRef(e2ee)
   e2eeRef.current = e2ee
+  const [ecrivent, setEcrivent] = useState({}) // roomId -> { memberId: { prenom, jusqua } } : « Prénom écrit… »
   const [presence, setPresence] = useState({ at: 0, ages: {} }) // ancienneté (secondes) de la dernière présence de chaque adhérent, au moment `at`
 
   const openRef = useRef(null)
@@ -256,8 +257,23 @@ export function useChat(token, meId) {
       } else if (event === 'delete') {
         patchConv(data.roomId, (c) => ({ ...c, messages: c.messages.map((m) => (m.id === data.messageId ? { ...m, deleted: true, texte: '' } : m)) }))
         refreshRooms().catch(() => {})
+      } else if (event === 'reaction') {
+        patchConv(data.roomId, (c) => ({ ...c, messages: c.messages.map((m) => (m.id === data.messageId ? { ...m, reactions: data.reactions } : m)) }))
+      } else if (event === 'typing') {
+        const jusqua = Date.now() + 6000
+        setEcrivent((e) => ({ ...e, [data.roomId]: { ...(e[data.roomId] || {}), [data.memberId]: { prenom: data.prenom, jusqua } } }))
       } else if (event === 'rooms') {
         refreshRooms().catch(() => {})
+      }
+      if (event === 'message' && data.message) {
+        // un message reçu met fin au « écrit… » de son auteur
+        setEcrivent((e) => {
+          const salon = e[data.roomId]
+          if (!salon || !salon[data.message.senderId]) return e
+          const reste = { ...salon }
+          delete reste[data.message.senderId]
+          return { ...e, [data.roomId]: reste }
+        })
       }
     }
 
@@ -314,16 +330,16 @@ export function useChat(token, meId) {
     return chiffre ? e2eeRef.current.chiffrerPour(room, texte) : texte
   }, [statutEnvoi])
 
-  const send = useCallback(async (roomId, texte, reply) => {
+  const send = useCallback(async (roomId, texte, reply, options = {}) => {
     const tempId = -(++tempSeq.current)
     const temp = {
-      id: tempId, roomId, senderId: meId, auteur: '', photoUrl: '', texte, deleted: false, pending: true,
+      id: tempId, roomId, senderId: meId, auteur: '', photoUrl: '', texte, deleted: false, pending: true, forwarded: !!options.forwarded, reactions: [],
       reply: reply ? { id: reply.id, auteur: reply.auteur, texte: apercu(reply) } : null, createdAt: new Date().toISOString(),
     }
     patchConv(roomId, (c) => ({ ...c, messages: [...c.messages, temp] }))
     try {
       const envoye = await preparer(roomId, texte)
-      const brut = await api.chatSend(token, roomId, envoye, reply ? reply.id : 0)
+      const brut = await api.chatSend(token, roomId, envoye, reply ? reply.id : 0, options)
       const msg = await clair(roomId, brut)
       patchConv(roomId, (c) => {
         const without = c.messages.filter((m) => m.id !== tempId)
@@ -390,6 +406,67 @@ export function useChat(token, meId) {
     refreshRooms().catch(() => {})
   }, [token, patchConv, refreshRooms, preparer, clair])
 
+  // Réaction : un emoji par adhérent et par message ; le même emoji une deuxième fois la retire.
+  const react = useCallback(async (roomId, messageId, emoji) => {
+    const m = convsRef.current[roomId]?.messages.find((x) => x.id === messageId)
+    const actuelle = m?.reactions?.find((r) => r.ids.includes(meId))?.emoji
+    const { reactions } = await api.chatReact(token, messageId, actuelle === emoji ? '' : emoji)
+    patchConv(roomId, (c) => ({ ...c, messages: c.messages.map((x) => (x.id === messageId ? { ...x, reactions } : x)) }))
+  }, [token, meId, patchConv])
+
+  // « en train d'écrire » : au plus un signal toutes les 3 secondes par discussion
+  const dernierSignal = useRef({})
+  const typing = useCallback((roomId) => {
+    const now = Date.now()
+    if (now - (dernierSignal.current[roomId] || 0) < 3000) return
+    dernierSignal.current[roomId] = now
+    api.chatTyping(token, roomId).catch(() => {})
+  }, [token])
+  // les « écrit… » expirent d'eux-mêmes
+  useEffect(() => {
+    const t = setInterval(() => {
+      const now = Date.now()
+      setEcrivent((e) => {
+        let change = false
+        const next = {}
+        for (const [roomId, salon] of Object.entries(e)) {
+          const reste = Object.fromEntries(Object.entries(salon).filter(([, v]) => v.jusqua > now))
+          if (Object.keys(reste).length !== Object.keys(salon).length) change = true
+          if (Object.keys(reste).length > 0) next[roomId] = reste
+        }
+        return change ? next : e
+      })
+    }, 1000)
+    return () => clearInterval(t)
+  }, [])
+  const quiEcrit = useCallback((roomId) => Object.values(ecrivent[roomId] || {}).map((v) => v.prenom), [ecrivent])
+
+  // Transférer : le texte est renvoyé depuis ce navigateur (chiffré si la discussion cible l'est) ; photos et documents
+  // non chiffrés sont copiés par le serveur. Renvoie le nombre de discussions où le message est parti.
+  const forward = useCallback(async (message, roomIds) => {
+    if (message.kind === 'media') {
+      const r = await api.chatForward(token, message.id, roomIds)
+      if (r.refus?.length) throw new Error(`Non transféré vers ${r.refus.join(', ')}.`)
+      return r.envoyes.length
+    }
+    let n = 0
+    for (const roomId of roomIds) {
+      if (convsRef.current[roomId]) await send(roomId, message.texte, null, { forwarded: true })
+      else {
+        const brut = await api.chatSend(token, roomId, await preparer(roomId, message.texte), 0, { forwarded: true })
+        setRooms((rs) => rs.map((r) => (r.id === roomId ? { ...r, last: { id: brut.id, auteur: brut.auteur, texte: apercu(brut), createdAt: brut.createdAt } } : r)))
+      }
+      n++
+    }
+    return n
+  }, [token, send, preparer])
+
+  // Sourdine : plus de notification pour cette discussion (sauf quand on me mentionne).
+  const mute = useCallback(async (roomId, muted) => {
+    await api.chatMute(token, roomId, muted)
+    setRooms((rs) => rs.map((r) => (r.id === roomId ? { ...r, muted } : r)))
+  }, [token])
+
   // Archiver / désarchiver : propre à chaque adhérent.
   const archive = useCallback(async (roomId, archived) => {
     await api.chatArchive(token, roomId, archived)
@@ -426,5 +503,5 @@ export function useChat(token, meId) {
     return a == null ? null : a + (Date.now() - presence.at) / 1000
   }, [presence])
 
-  return { e2ee, chiffrerHistorique, historiqueAuto, presenceDe, rooms, canCreate, loaded, convs, openId, openRoom, loadMore, send, remove, edit, archive, removeRoom, sendMedia, sendPoll, sendEvent, vote, rsvp, refreshRooms, unreadTotal, markAllRead, setPanelOpen, online }
+  return { e2ee, chiffrerHistorique, historiqueAuto, presenceDe, rooms, canCreate, loaded, convs, openId, openRoom, loadMore, send, remove, edit, archive, removeRoom, sendMedia, sendPoll, sendEvent, vote, rsvp, react, typing, quiEcrit, forward, mute, refreshRooms, unreadTotal, markAllRead, setPanelOpen, online }
 }

@@ -4,6 +4,7 @@ import { RunnerFigure } from '../components/Legs.jsx'
 import { apercu } from '../lib/chat.js'
 import { niveauPresence, derniereConnexion, dureeDeconnexion } from '../lib/presence.js'
 import { BoutonChiffrement, CadenasDiscussion, useStatutDM } from './ChatChiffrement.jsx'
+import { BarreReactions, Reactions, TexteRiche, BarreRecherche, SuggestionsMention, Transfert, mentionEnCours, normaliser, texteCherchable } from './ChatSocial.jsx'
 import { Modal, AttachMenu, Attachments, Lightbox, PollCard, EventCard, PollModal, EventModal, taille, iconeFichier } from './ChatRich.jsx'
 
 const EMOJIS = ['😀', '😂', '😅', '😍', '🥰', '😎', '🤩', '🙂', '😉', '🙏', '👍', '👏', '🙌', '💪', '🔥', '🎉', '❤️', '😢', '😮', '🤔',
@@ -106,16 +107,21 @@ function Coches({ message, room, otherRead }) {
   return <span className={`chat-tick${lu ? ' is-read' : ''}`} title={lu ? (room.kind === 'dm' ? 'Lu' : 'Lu par au moins une personne') : 'Envoyé'}>{lu ? '✓✓' : '✓'}</span>
 }
 
-function Bulle({ message, room, me, otherRead, onReply, onEdit, onDelete, onVote, onRsvp, onOpenImage, onBroken, showAuteur }) {
+function Bulle({ message, room, me, otherRead, onReply, onEdit, onDelete, onVote, onRsvp, onOpenImage, onBroken, showAuteur,
+  reacting, onReacting, onReact, onForward, recherche, trouve }) {
   const mine = message.senderId === me.id
   const actif = !message.deleted && !message.pending && !message.failed
+  const maReaction = message.reactions?.find((r) => r.ids.includes(me.id))?.emoji
+  // transférables : textes lisibles, photos et documents non chiffrés
+  const transferable = actif && !message.illisible && ((!message.kind || message.kind === 'text') ? !!message.texte : message.kind === 'media' && !message.chiffre)
   // l'auteur peut modifier / supprimer tant que personne d'autre n'a lu ; le bureau peut toujours supprimer (modération)
   const modifiable = mine && actif && message.id > otherRead && (!message.kind || message.kind === 'text') // seuls les textes se modifient
   const supprimable = mine && actif && message.id > otherRead
   const canDelete = actif && (supprimable || !!me.features?.includes('messagerie.moderer'))
   return (
-    <div className={`chat-row${mine ? ' is-mine' : ''}`}>
-      <div className={`chat-bubble${mine ? ' is-mine' : ''}${message.deleted ? ' is-deleted' : ''}${message.kind && message.kind !== 'text' && !message.deleted ? ' is-rich' : ''}`} tabIndex={0}>
+    <div className={`chat-row${mine ? ' is-mine' : ''}${message.reactions?.length && !message.deleted ? ' has-reactions' : ''}`} data-msg={message.id}>
+      <div className={`chat-bubble${mine ? ' is-mine' : ''}${message.deleted ? ' is-deleted' : ''}${message.kind && message.kind !== 'text' && !message.deleted ? ' is-rich' : ''}${trouve ? ' is-found' : ''}`} tabIndex={0}>
+        {message.forwarded && !message.deleted && <span className="chat-forwarded">↪ Transféré</span>}
         {!mine && showAuteur && room.kind !== 'dm' && (
           <b className="chat-author" style={{ color: couleurDe(message.senderId) }}>{message.auteur}</b>
         )}
@@ -130,7 +136,7 @@ function Bulle({ message, room, me, otherRead, onReply, onEdit, onDelete, onVote
             {message.kind === 'media' && <Attachments items={message.attachments || []} onOpenImage={onOpenImage} onBroken={onBroken} />}
             {message.kind === 'poll' && message.poll && <PollCard message={message} onVote={onVote} />}
             {message.kind === 'event' && message.event && <EventCard message={message} onRsvp={onRsvp} />}
-            {message.texte && <span className="chat-body">{message.texte}</span>}
+            {message.texte && <TexteRiche texte={message.texte} monNom={`${me.prenom || ''} ${me.nom || ''}`.trim()} recherche={recherche} />}
           </>
         )}
         <span className="chat-meta">
@@ -141,11 +147,15 @@ function Bulle({ message, room, me, otherRead, onReply, onEdit, onDelete, onVote
         </span>
         {!message.deleted && !message.pending && !message.failed && (
           <span className="chat-actions">
+            <button type="button" title="Réagir" onClick={() => onReacting(reacting ? null : message.id)}>😊</button>
             <button type="button" title="Répondre" onClick={() => onReply(message)}>↩</button>
+            {transferable && <button type="button" title="Transférer" onClick={() => onForward(message)}>↪</button>}
             {modifiable && <button type="button" title="Modifier" onClick={() => onEdit(message)}>✏️</button>}
             {canDelete && <button type="button" title="Supprimer" onClick={() => onDelete(message)}>🗑</button>}
           </span>
         )}
+        {reacting && actif && <BarreReactions actuelle={maReaction} onPick={(e) => { onReacting(null); onReact(message, e) }} onClose={() => onReacting(null)} />}
+        {!message.deleted && <Reactions reactions={message.reactions} meId={me.id} onToggle={(e) => onReact(message, e)} />}
       </div>
     </div>
   )
@@ -332,12 +342,19 @@ function Conversation({ chat, room, token, me, members, onBack, onUnarchived }) 
   const [modal, setModal] = useState(null) // 'sondage' | 'evenement'
   const [envoi, setEnvoi] = useState(false)
   const [visionneuse, setVisionneuse] = useState(null)
+  const [reagir, setReagir] = useState(null) // message dont la barre de réactions est ouverte
+  const [transfert, setTransfert] = useState(null) // message à transférer
+  const [recherche, setRecherche] = useState(null) // null : fermée ; sinon le texte cherché
+  const [trouve, setTrouve] = useState(0) // index du résultat affiché (0 = le plus récent)
+  const [mention, setMention] = useState(null) // { debut, q } : « @… » en cours de saisie
+  const [mentions, setMentions] = useState([]) // participants mentionnés dans le message en cours : { id, nom }
   const inputMedias = useRef(null)
   const inputFichiers = useRef(null)
   const seq = useRef(0)
   const zone = useRef(null)
   const input = useRef(null)
   const bas = useRef(true)
+  const curseur = useRef(null)
   const prevH = useRef(0)
 
   // reste collé en bas sauf si l'adhérent remonte dans l'historique
@@ -360,7 +377,7 @@ function Conversation({ chat, room, token, me, members, onBack, onUnarchived }) 
     return () => document.removeEventListener('mousedown', close)
   }, [menu])
 
-  useEffect(() => { bas.current = true; setReply(null); setEditing(null); setTexte(''); setErr(''); setPj(false); setModal(null); viderFichiers(); input.current?.focus() }, [room.id])
+  useEffect(() => { bas.current = true; setReply(null); setEditing(null); setTexte(''); setErr(''); setPj(false); setModal(null); setRecherche(null); setMentions([]); setMention(null); viderFichiers(); input.current?.focus() }, [room.id])
 
   // la zone de saisie s'ajuste au texte, y compris quand on le remplit (modification d'un message)
   useLayoutEffect(() => {
@@ -368,6 +385,11 @@ function Conversation({ chat, room, token, me, members, onBack, onUnarchived }) 
     if (!t) return
     t.style.height = 'auto'
     t.style.height = `${Math.min(t.scrollHeight, 120)}px`
+    if (curseur.current != null) {
+      t.focus()
+      t.setSelectionRange(curseur.current, curseur.current)
+      curseur.current = null
+    }
   }, [texte])
 
   function onScroll() {
@@ -470,11 +492,39 @@ function Conversation({ chat, room, token, me, members, onBack, onUnarchived }) 
     const r = reply
     setReply(null)
     setEmoji(false)
+    setMention(null)
+    // seules les mentions encore présentes dans le texte comptent
+    const ids = [...new Set(mentions.filter((m) => t.includes(`@${m.nom}`)).map((m) => m.id))]
+    setMentions([])
     bas.current = true
-    try { await chat.send(room.id, t, r) } catch (e) { setErr(e.message) }
+    try { await chat.send(room.id, t, r, { mentions: ids }) } catch (e) { setErr(e.message) }
     input.current?.focus()
   }
+  function saisir(e) {
+    const v = e.target.value
+    setTexte(v)
+    if (v.trim() && !editing) chat.typing(room.id)
+    setMention(room.kind !== 'dm' && !editing ? mentionEnCours(v, e.target.selectionStart ?? v.length) : null)
+  }
+  function choisirMention(p) {
+    if (!mention) return
+    const fin = mention.debut + 1 + mention.q.length
+    const insere = `@${p.nom} `
+    const suite = texte.slice(0, mention.debut) + insere + texte.slice(fin)
+    setTexte(suite)
+    setMentions((l) => [...l, { id: p.id, nom: p.nom }])
+    setMention(null)
+    curseur.current = mention.debut + insere.length // placé juste après la mention, au prochain rendu
+  }
+  async function reagirA(m, emoji) {
+    try { await chat.react(room.id, m.id, emoji) } catch (e) { setErr(e.message) }
+  }
+  async function basculerSourdine() {
+    setMenu(false)
+    try { await chat.mute(room.id, !room.muted) } catch (e) { setErr(e.message) }
+  }
   function onKey(e) {
+    if (mention && e.key === 'Escape') { e.preventDefault(); setMention(null); return }
     // Entrée = retour à la ligne ; seule la flèche (ou Ctrl/Cmd + Entrée) envoie le message
     if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && !e.nativeEvent.isComposing) { e.preventDefault(); envoyer() }
     if (e.key === 'Escape' && editing) { e.preventDefault(); e.stopPropagation(); annulerEdition() }
@@ -508,14 +558,32 @@ function Conversation({ chat, room, token, me, members, onBack, onUnarchived }) 
     items.push({ m, showAuteur: !prev || prev.senderId !== m.senderId || new Date(prev.createdAt).toDateString() !== k, key: m.id })
   })
 
+  // recherche : messages chargés (et déjà déchiffrés) qui contiennent le texte, du plus récent au plus ancien
+  const resultats = useMemo(() => {
+    const q = normaliser((recherche || '').trim())
+    if (!q) return []
+    return conv.messages.filter((m) => m.id > 0 && normaliser(texteCherchable(m)).includes(q)).map((m) => m.id).reverse()
+  }, [conv.messages, recherche])
+  const idTrouve = resultats[Math.min(trouve, resultats.length - 1)]
+  useEffect(() => { setTrouve(0) }, [recherche])
+  useEffect(() => {
+    if (idTrouve == null) return
+    bas.current = false
+    zone.current?.querySelector(`[data-msg="${idTrouve}"]`)?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+  }, [idTrouve])
+
+  const ecrivent = chat.quiEcrit(room.id)
   const presenceAutre = usePresence(room.kind === 'dm' ? room.otherId : 0)
   const [statutChiffre, actualiserChiffre] = useStatutDM(chat, room)
   const chiffre = statutChiffre?.statut === 'chiffre' // discussion chiffrée : ni sondage, ni événement
   const { historiqueAuto } = chat
   useEffect(() => { if (chiffre) historiqueAuto(room.id) }, [chiffre, room.id, historiqueAuto]) // chiffre mes anciens messages restés en clair
-  const sousTitre = room.kind === 'dm'
+  const sousTitreBase = room.kind === 'dm'
     ? (presenceAutre ? (presenceAutre.niveau === 'vert' ? 'En ligne' : presenceAutre.duree === '—' ? 'Jamais connecté' : `Déconnecté depuis ${presenceAutre.duree} · dernière connexion : ${presenceAutre.derniere}`) : 'Message privé')
     : (conv.participants.length ? conv.participants.slice(0, 6).map((p) => p.nom.split(' ')[0]).join(', ') + (conv.participants.length > 6 ? '…' : '') : `${room.members} participants`)
+  const sousTitre = ecrivent.length === 0 ? sousTitreBase
+    : room.kind === 'dm' ? 'écrit…'
+      : ecrivent.length === 1 ? `${ecrivent[0]} écrit…` : `${ecrivent.slice(0, 3).join(', ')} écrivent…`
 
   return (
     <section
@@ -528,7 +596,7 @@ function Conversation({ chat, room, token, me, members, onBack, onUnarchived }) 
         {room.kind === 'dm' ? <AvatarPresence id={room.otherId} photoUrl={room.photoUrl} nom={room.nom} size={40} /> : <Avatar photoUrl={room.photoUrl} nom={room.nom} groupe />}
         <button type="button" className="chat-conv__title" onClick={() => room.kind !== 'dm' && setInfos(true)} disabled={room.kind === 'dm'}>
           <b>{room.nom}</b>
-          <span>{sousTitre}</span>
+          <span className={ecrivent.length ? 'is-typing' : ''}>{sousTitre}</span>
         </button>
         {room.kind === 'dm' && <CadenasDiscussion chat={chat} room={room} statut={statutChiffre} actualiser={actualiserChiffre} />}
         <div className="chat-menu-wrap">
@@ -536,12 +604,20 @@ function Conversation({ chat, room, token, me, members, onBack, onUnarchived }) 
           {menu && (
             <div className="chat-menu" role="menu">
               {room.kind !== 'dm' && <button type="button" role="menuitem" onClick={() => { setMenu(false); setInfos(true) }}>👥 Participants</button>}
+              <button type="button" role="menuitem" onClick={() => { setMenu(false); setRecherche('') }}>🔍 Rechercher dans la discussion</button>
+              <button type="button" role="menuitem" onClick={basculerSourdine}>{room.muted ? '🔔 Réactiver les notifications' : '🔕 Mettre en sourdine'}</button>
               <button type="button" role="menuitem" onClick={archiver}>{room.archived ? '📤 Désarchiver la discussion' : '🗄️ Archiver la discussion'}</button>
               {room.canDelete && <button type="button" role="menuitem" className="is-danger" onClick={supprimerDiscussion}>🗑️ Supprimer la discussion</button>}
             </div>
           )}
         </div>
       </header>
+      {recherche != null && (
+        <BarreRecherche q={recherche} setQ={setRecherche} total={resultats.length} index={Math.min(trouve, Math.max(resultats.length - 1, 0))}
+          onPrev={() => setTrouve((i) => (resultats.length ? (i + 1) % resultats.length : 0))}
+          onNext={() => setTrouve((i) => (resultats.length ? (i - 1 + resultats.length) % resultats.length : 0))}
+          onClose={() => setRecherche(null)} plus={conv.more} chargement={conv.loading} onPlus={() => chat.loadMore(room.id)} />
+      )}
 
       <div className="chat-scroll" ref={zone} onScroll={onScroll}>
         {conv.loading && conv.messages.length === 0 && <p className="chat-empty">Chargement…</p>}
@@ -554,7 +630,9 @@ function Conversation({ chat, room, token, me, members, onBack, onUnarchived }) 
               onVote={(m, ids) => chat.vote(room.id, m.id, ids).catch((e) => setErr(e.message))}
               onRsvp={(m, rep) => chat.rsvp(room.id, m.id, rep).catch((e) => setErr(e.message))}
               onOpenImage={(images, index) => setVisionneuse({ images, index })}
-              onBroken={recharger} />))}
+              onBroken={recharger}
+              reacting={reagir === it.m.id} onReacting={setReagir} onReact={reagirA} onForward={setTransfert}
+              recherche={recherche?.trim() || ''} trouve={it.m.id === idTrouve} />))}
       </div>
 
       {err && <p className="chat-error chat-error--bar">{err} <button type="button" onClick={() => setErr('')}>✕</button></p>}
@@ -575,6 +653,7 @@ function Conversation({ chat, room, token, me, members, onBack, onUnarchived }) 
           {EMOJIS.map((e) => <button type="button" key={e} onClick={() => { setTexte((t) => t + e); input.current?.focus() }}>{e}</button>)}
         </div>
       )}
+      {mention && <SuggestionsMention participants={conv.participants} q={mention.q} meId={me.id} onPick={choisirMention} />}
       {pj && <AttachMenu onPick={choisirAjout} onClose={() => setPj(false)} chiffre={chiffre} />}
       {fichiers.length > 0 && (
         <div className="chat-tray">
@@ -600,8 +679,9 @@ function Conversation({ chat, room, token, me, members, onBack, onUnarchived }) 
           value={texte}
           maxLength={2000}
           placeholder={editing ? 'Modifie ton message' : fichiers.length ? 'Ajoute une légende…' : 'Écris un message'}
-          onChange={(e) => setTexte(e.target.value)}
+          onChange={saisir}
           onKeyDown={onKey}
+          onBlur={() => setTimeout(() => setMention(null), 150)}
           onPaste={(e) => { const fs = Array.from(e.clipboardData?.files || []); if (fs.length) { e.preventDefault(); ajouterFichiers(fs) } }}
         />
         <button type="button" className="chat-send" onClick={envoyer} disabled={envoi || (!texte.trim() && fichiers.length === 0)} aria-label={editing ? 'Enregistrer la modification' : 'Envoyer'}>{editing ? '✓' : '➤'}</button>
@@ -613,6 +693,10 @@ function Conversation({ chat, room, token, me, members, onBack, onUnarchived }) 
       {modal === 'evenement' && <EventModal onClose={() => setModal(null)} onSend={(d) => chat.sendEvent(room.id, { ...d, replyTo: reply ? reply.id : 0 }).then(() => { setReply(null); bas.current = true })} />}
       {visionneuse && <Lightbox images={visionneuse.images} index={visionneuse.index} onClose={() => setVisionneuse(null)} />}
 
+      {transfert && (
+        <Transfert message={transfert} rooms={chat.rooms} onClose={() => setTransfert(null)}
+          onSend={async (ids) => { await chat.forward(transfert, ids); if (ids.includes(room.id)) bas.current = true }} />
+      )}
       {infos && <Participants room={room} conv={conv} token={token} members={members} me={me} chat={chat} onClose={() => setInfos(false)} />}
     </section>
   )
@@ -702,10 +786,12 @@ function ChatPanelInterne({ chat, token, me, members, onMenu }) {
               <button type="button" key={r.id} className={`chat-room${r.id === chat.openId ? ' is-on' : ''}`} onClick={() => chat.openRoom(r.id)}>
                 {r.kind === 'dm' ? <AvatarPresence id={r.otherId} photoUrl={r.photoUrl} nom={r.nom} size={46} /> : <Avatar photoUrl={r.photoUrl} nom={r.nom} groupe size={46} />}
                 <span className="chat-room__main">
-                  <span className="chat-room__top"><b>{r.nom}</b></span>
+                  <span className="chat-room__top"><b>{r.nom}</b>{r.muted && <span className="chat-room__muted" title="En sourdine">🔕</span>}</span>
                   <span className="chat-room__bottom">
-                    {r.kind === 'dm' ? <PresenceLigne id={r.otherId} /> : <span className="chat-room__last">{r.members} participants</span>}
-                    {r.unread > 0 && <i className="chat-badge">{r.unread > 99 ? '99+' : r.unread}</i>}
+                    {chat.quiEcrit(r.id).length > 0
+                      ? <span className="chat-room__last is-typing">{r.kind === 'dm' ? 'écrit…' : `${chat.quiEcrit(r.id)[0]} écrit…`}</span>
+                      : r.kind === 'dm' ? <PresenceLigne id={r.otherId} /> : <span className="chat-room__last">{r.members} participants</span>}
+                    {r.unread > 0 && <i className={`chat-badge${r.muted ? ' chat-badge--muted' : ''}`}>{r.unread > 99 ? '99+' : r.unread}</i>}
                   </span>
                 </span>
               </button>

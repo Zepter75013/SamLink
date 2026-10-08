@@ -57,6 +57,7 @@ type Room struct {
 	CanAdd    bool   `json:"canAdd"`
 	Archived  bool   `json:"archived"`
 	CanDelete bool   `json:"canDelete"`
+	Muted     bool   `json:"muted"` // en sourdine pour l'adhérent : pas de notification (sauf mention)
 }
 
 type Reply struct {
@@ -79,6 +80,8 @@ type Message struct {
 	Attachments []Attachment `json:"attachments"`
 	Poll        *Poll        `json:"poll"`
 	Event       *EventInfo   `json:"event"`
+	Reactions   []Reaction   `json:"reactions"`
+	Forwarded   bool         `json:"forwarded"` // transféré depuis une autre discussion
 	CreatedAt   time.Time    `json:"createdAt"`
 }
 
@@ -201,16 +204,17 @@ func (r *Repository) MemberIDs(rr *roomRow) ([]int64, error) {
 }
 
 func (r *Repository) Rooms(p *Person) ([]Room, error) {
-	// ordre des « ? » : sender_id, reads.member_id, prefs.member_id, puis le prédicat d'appartenance
-	args := []any{p.ID, p.ID, p.ID}
+	// ordre des « ? » : sender_id, reads.member_id, prefs.member_id, mutes.member_id, puis le prédicat d'appartenance
+	args := []any{p.ID, p.ID, p.ID, p.ID}
 	args = append(args, memberArgs(p)...)
 	rows, err := r.db.Query(`
-		SELECT `+r.roomCols()+`, COALESCE(pr.archived, FALSE),
+		SELECT `+r.roomCols()+`, COALESCE(pr.archived, FALSE), mu.member_id IS NOT NULL,
 			(SELECT COUNT(*) FROM chat_messages m
 			  WHERE m.room_id = r.id AND m.id > COALESCE(rd.last_read_id, 0) AND m.sender_id <> ? AND m.deleted_at IS NULL)
 		FROM chat_rooms r
 		LEFT JOIN chat_reads rd ON rd.room_id = r.id AND rd.member_id = ?
 		LEFT JOIN chat_room_prefs pr ON pr.room_id = r.id AND pr.member_id = ?
+		LEFT JOIN chat_mutes mu ON mu.room_id = r.id AND mu.member_id = ?
 		WHERE `+memberOfRoom+` AND COALESCE(pr.deleted, FALSE) = FALSE`, args...)
 	if err != nil {
 		return nil, err
@@ -219,11 +223,12 @@ func (r *Repository) Rooms(p *Person) ([]Room, error) {
 		rr       roomRow
 		unread   int
 		archived bool
+		muted    bool
 	}
 	var list []tmp
 	for rows.Next() {
 		var t tmp
-		if err := rows.Scan(&t.rr.id, &t.rr.kind, &t.rr.rule, &t.rr.nom, &t.rr.createdBy, &t.archived, &t.unread); err != nil {
+		if err := rows.Scan(&t.rr.id, &t.rr.kind, &t.rr.rule, &t.rr.nom, &t.rr.createdBy, &t.archived, &t.muted, &t.unread); err != nil {
 			rows.Close()
 			return nil, err
 		}
@@ -236,7 +241,7 @@ func (r *Repository) Rooms(p *Person) ([]Room, error) {
 
 	out := make([]Room, 0, len(list))
 	for _, t := range list {
-		room := Room{ID: t.rr.id, Kind: t.rr.kind, Nom: t.rr.nom, Unread: t.unread, Archived: t.archived,
+		room := Room{ID: t.rr.id, Kind: t.rr.kind, Nom: t.rr.nom, Unread: t.unread, Archived: t.archived, Muted: t.muted,
 			CanDelete: t.rr.kind != "auto"} // les salons automatiques du club peuvent être archivés, pas supprimés
 		ids, err := r.MemberIDs(&t.rr)
 		if err != nil {
@@ -307,6 +312,7 @@ func scanMessage(scan func(...any) error) (*Message, error) {
 		return nil, err
 	}
 	m.Attachments = []Attachment{}
+	m.Reactions = []Reaction{}
 	if m.Deleted {
 		m.Texte = ""
 	}
