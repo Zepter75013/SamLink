@@ -81,11 +81,11 @@ export default function SamLink({ token, onDeconnexion }) {
               Connecté en tant que <b>{me.prenom} {me.nom}</b>
               <br /><small>{me.email}</small>
             </p>
-            <NotificationsPanel token={token} />
             <div className="samlink-compte__actions">
               <button type="button" className="btn btn--ghost" onClick={() => { setMenu(false); setApropos(true) }}>À propos · v{APP_VERSION}</button>
               <button type="button" className="btn btn--ghost" onClick={() => onDeconnexion('')}>Se déconnecter</button>
             </div>
+            <NotificationsPanel token={token} />
           </div>
         </Modal>
       )}
