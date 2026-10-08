@@ -87,6 +87,9 @@ func NewRouter(db *sql.DB, cfg config.Config) http.Handler {
 	mux.HandleFunc("GET /api/chat/ice", authService.RequireAuth(chatHandler.ICEServers))
 	mux.HandleFunc("POST /api/chat/rooms/{id}/call", authService.RequireAuth(chatHandler.Signal))
 	mux.HandleFunc("POST /api/chat/rooms/{id}/mute", authService.RequireAuth(chatHandler.Mute))
+	mux.HandleFunc("PUT /api/chat/rooms/{id}/photo", authService.RequireAuth(chatHandler.RoomPhotoSet))
+	mux.HandleFunc("DELETE /api/chat/rooms/{id}/photo", authService.RequireAuth(chatHandler.RoomPhotoDelete))
+	mux.HandleFunc("GET /api/chat/room-photos/{id}", chatHandler.RoomPhotoFile) // lien signé (balise img)
 
 	return httpx.CORS(cfg.FrontendURL, mux)
 }

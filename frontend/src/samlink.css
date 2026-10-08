@@ -178,3 +178,18 @@
 .chat-live-choix__btns { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; }
 .chat-live-choix__btns .btn { padding: 0.55rem 0.3rem; font-size: 0.9rem; }
 .chat-live-choix small { font-size: 0.78rem; color: var(--stone); }
+
+/* ---- En-têtes alignés, apparence, photo du salon (1.8) ---- */
+.chat--full .chat-list__head, .chat--full .chat-conv__head { box-sizing: border-box; min-height: 4.8rem; }
+.samlink-theme { display: grid; gap: 0.45rem; margin-bottom: 1rem; }
+.samlink-theme__titre { font-family: var(--font-mono); font-size: 0.8rem; color: var(--stone); letter-spacing: 0.04em; text-transform: uppercase; }
+.samlink-theme__choix { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.samlink-theme__choix button { padding: 0.6rem 0.3rem; border: 0; background: none; color: var(--ink); font: inherit; font-size: 0.92rem; cursor: pointer; }
+.samlink-theme__choix button + button { border-left: 1px solid var(--line); }
+.samlink-theme__choix button.is-on { background: var(--vermilion); color: #fff; font-weight: 600; }
+.chat-photo-salon { display: grid; justify-items: center; gap: 0.7rem; padding: 1.2rem 1rem 1.3rem; text-align: center; }
+.chat-photo-salon__img { width: 9rem; height: 9rem; border-radius: 50%; object-fit: cover; display: grid; place-content: center; font-size: 3.5rem; background: #cfd8dc; }
+.chat-photo-salon__choisir { cursor: pointer; }
+.chat-photo-salon .chat-create { margin: 0; width: 100%; }
+.chat-photo-salon__retirer { border: 0; background: none; color: var(--vermilion); font: inherit; font-weight: 600; cursor: pointer; }
+.chat-photo-salon small { color: var(--stone); font-size: 0.8rem; }

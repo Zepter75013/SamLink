@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { api } from '../lib/api.js'
+import { api, chatFileUrl } from '../lib/api.js'
 import { RunnerFigure } from '../components/Legs.jsx'
 import { apercu } from '../lib/chat.js'
 import { niveauPresence, derniereConnexion, dureeDeconnexion } from '../lib/presence.js'
@@ -8,6 +8,7 @@ import { BarreReactions, Reactions, TexteRiche, BarreRecherche, SuggestionsMenti
 import { CarteDirect, CartePosition, ModalPosition, lirePosition } from './ChatPosition.jsx'
 import { Enregistreur, vocalDisponible } from './ChatVocal.jsx'
 import { AppelsProvider, useAppels } from './Appels.jsx'
+import { ModalPhotoSalon } from './ChatPhoto.jsx'
 import { Modal, AttachMenu, Attachments, Lightbox, PollCard, EventCard, PollModal, EventModal, taille, iconeFichier } from './ChatRich.jsx'
 
 const EMOJIS = ['😀', '😂', '😅', '😍', '🥰', '😎', '🤩', '🙂', '😉', '🙏', '👍', '👏', '🙌', '💪', '🔥', '🎉', '❤️', '😢', '😮', '🤔',
@@ -28,11 +29,13 @@ function usePresence(id) {
   return { niveau: niveauPresence(age), duree: dureeDeconnexion(age), derniere: derniereConnexion(age) }
 }
 
+const participants = (n) => `${n} participant${n > 1 ? 's' : ''}`
+
 // Avatar ; `niveau` (vert, orange, rouge) ajoute la pastille de présence à cheval sur le coin bas droit de la photo
 function Avatar({ photoUrl, nom, size = 40, groupe, niveau }) {
   const style = { width: size, height: size, fontSize: size * 0.38 }
   const photo = photoUrl
-    ? <img className="chat-avatar" src={photoUrl} alt="" style={style} />
+    ? <img className="chat-avatar" src={chatFileUrl(photoUrl)} alt="" style={style} />
     : <span className={`chat-avatar chat-avatar--${groupe ? 'groupe' : 'init'}`} style={style}>{groupe ? '👥' : initiales(nom)}</span>
   if (!niveau) return photo
   const d = Math.max(11, Math.round(size * 0.3))
@@ -315,7 +318,7 @@ function Participants({ room, conv, token, members, me, onClose, chat }) {
     } catch (e) { setErr(e.message) }
   }
   return (
-    <Modal titre={`${room.nom} · ${conv.participants.length} participants`} onClose={onClose}>
+    <Modal titre={`${room.nom} · ${participants(conv.participants.length)}`} onClose={onClose}>
       {err && <p className="chat-error">{err}</p>}
       {!ajout && (
         <>
@@ -655,7 +658,7 @@ function Conversation({ chat, room, token, me, members, onBack, onUnarchived }) 
   useEffect(() => { if (chiffre) historiqueAuto(room.id) }, [chiffre, room.id, historiqueAuto]) // chiffre mes anciens messages restés en clair
   const sousTitreBase = room.kind === 'dm'
     ? (presenceAutre ? (presenceAutre.niveau === 'vert' ? 'En ligne' : presenceAutre.duree === '—' ? 'Jamais connecté' : `Déconnecté depuis ${presenceAutre.duree} · dernière connexion : ${presenceAutre.derniere}`) : 'Message privé')
-    : (conv.participants.length ? conv.participants.slice(0, 6).map((p) => p.nom.split(' ')[0]).join(', ') + (conv.participants.length > 6 ? '…' : '') : `${room.members} participants`)
+    : (conv.participants.length ? conv.participants.slice(0, 6).map((p) => p.nom.split(' ')[0]).join(', ') + (conv.participants.length > 6 ? '…' : '') : participants(room.members))
   const sousTitre = ecrivent.length === 0 ? sousTitreBase
     : room.kind === 'dm' ? 'écrit…'
       : ecrivent.length === 1 ? `${ecrivent[0]} écrit…` : `${ecrivent.slice(0, 3).join(', ')} écrivent…`
@@ -685,6 +688,7 @@ function Conversation({ chat, room, token, me, members, onBack, onUnarchived }) 
           {menu && (
             <div className="chat-menu" role="menu">
               {room.kind !== 'dm' && <button type="button" role="menuitem" onClick={() => { setMenu(false); setInfos(true) }}>👥 Participants</button>}
+              {room.canPhoto && <button type="button" role="menuitem" onClick={() => { setMenu(false); setModal('photo') }}>🖼️ Photo du salon</button>}
               <button type="button" role="menuitem" onClick={() => { setMenu(false); setRecherche('') }}>🔍 Rechercher dans la discussion</button>
               <button type="button" role="menuitem" onClick={basculerSourdine}>{room.muted ? '🔔 Réactiver les notifications' : '🔕 Mettre en sourdine'}</button>
               <button type="button" role="menuitem" onClick={archiver}>{room.archived ? '📤 Désarchiver la discussion' : '🗄️ Archiver la discussion'}</button>
@@ -791,6 +795,7 @@ function Conversation({ chat, room, token, me, members, onBack, onUnarchived }) 
       {visionneuse && <Lightbox images={visionneuse.images} index={visionneuse.index} onClose={() => setVisionneuse(null)} />}
 
       {info && chargerInfo && <InfoMessage message={conv.messages.find((m) => m.id === info.id) || info} charger={chargerInfo} onClose={() => setInfo(null)} />}
+      {modal === 'photo' && <ModalPhotoSalon room={room} onClose={() => setModal(null)} onSave={(b) => chat.photoSalon(room.id, b)} />}
       {modal === 'position' && <ModalPosition onClose={() => setModal(null)}
         onLive={(min) => chat.demarrerLive(room.id, min, reply).then(() => { setReply(null); bas.current = true })}
         onSend={(t) => chat.send(room.id, t, reply).then(() => { setReply(null); bas.current = true })} />}
@@ -897,7 +902,7 @@ function ChatPanelInterne({ chat, token, me, members, onMenu }) {
                   <span className="chat-room__bottom">
                     {chat.quiEcrit(r.id).length > 0
                       ? <span className="chat-room__last is-typing">{r.kind === 'dm' ? 'écrit…' : `${chat.quiEcrit(r.id)[0]} écrit…`}</span>
-                      : r.kind === 'dm' ? <PresenceLigne id={r.otherId} /> : <span className="chat-room__last">{r.members} participants</span>}
+                      : r.kind === 'dm' ? <PresenceLigne id={r.otherId} /> : <span className="chat-room__last">{participants(r.members)}</span>}
                     {r.unread > 0 && <i className={`chat-badge${r.muted ? ' chat-badge--muted' : ''}`}>{r.unread > 99 ? '99+' : r.unread}</i>}
                   </span>
                 </span>

@@ -57,8 +57,9 @@ type Room struct {
 	CanAdd    bool   `json:"canAdd"`
 	Archived  bool   `json:"archived"`
 	CanDelete bool   `json:"canDelete"`
-	CanPin    bool   `json:"canPin"` // peut épingler des messages (voir peutEpingler)
-	Muted     bool   `json:"muted"`  // en sourdine pour l'adhérent : pas de notification (sauf mention)
+	CanPin    bool   `json:"canPin"`   // peut épingler des messages (voir peutEpingler)
+	Muted     bool   `json:"muted"`    // en sourdine pour l'adhérent : pas de notification (sauf mention)
+	CanPhoto  bool   `json:"canPhoto"` // peut changer la photo du salon (voir peutChangerPhoto)
 }
 
 type Reply struct {
@@ -263,6 +264,10 @@ func (r *Repository) Rooms(p *Person) ([]Room, error) {
 		}
 		room.CanAdd = t.rr.kind == "custom" && t.rr.createdBy == p.ID
 		room.CanPin = peutEpingler(&t.rr, p)
+		room.CanPhoto = peutChangerPhoto(&t.rr, p)
+		if t.rr.kind != "dm" {
+			room.PhotoURL = r.roomPhoto(t.rr.id)
+		}
 		var l Last
 		var kind, question, titre string
 		var firstAtt sql.NullString

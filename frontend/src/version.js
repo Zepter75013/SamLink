@@ -4,6 +4,11 @@
 
 export const CHANGELOG = [
   {
+    version: '1.8.0',
+    date: '9 octobre 2026',
+    notes: "Apparence au choix dans « Mon compte » : Système (suit le téléphone ou l'ordinateur), Clair ou Sombre, mémorisé sur l'appareil. Photo d'un salon : menu ⋮ › 🖼️ Photo du salon (créateur du salon et modérateurs ; salons du club : modérateurs), recadrée au carré et allégée avant l'envoi, visible dans la liste et en haut de la discussion ; « Retirer la photo » revient à l'icône 👥. Sur ordinateur, les en-têtes de la liste et de la discussion ont la même hauteur (ils se chevauchaient en décalé). « 1 participant » au singulier. Migration à appliquer (0006 : une nouvelle table, chat_room_photos).",
+  },
+  {
     version: '1.7.0',
     date: '9 octobre 2026',
     notes: "Position en direct : ＋ › Position › « Partager ma position en direct » pendant 15 minutes, 1 heure ou 8 heures. La bulle montre une carte qui suit tes déplacements (« En direct jusqu'à 18:30 · mis à jour à l'instant ») et le bouton « Arrêter le partage » ; à la fin, la dernière position reste affichée. La position n'est envoyée que tant que Sam Link reste ouvert sur ton téléphone (un site web ne peut pas suivre la position en arrière-plan). Chiffrée dans les messages privés chiffrés. Migration à appliquer (0005 : une nouvelle table, chat_live).",

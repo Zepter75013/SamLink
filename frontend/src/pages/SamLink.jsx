@@ -7,6 +7,23 @@ import NotificationsPanel from '../components/NotificationsPanel.jsx'
 import AboutContent from '../components/AboutContent.jsx'
 import AideChiffrement from '../components/AideChiffrement.jsx'
 import { APP_VERSION } from '../version.js'
+import { getTheme, setTheme } from '../lib/theme.js'
+
+// Apparence : suit le réglage du téléphone ou de l'ordinateur (Système), ou force le thème clair ou sombre
+function ChoixTheme() {
+  const [theme, choisir] = useState(getTheme)
+  return (
+    <div className="samlink-theme" role="radiogroup" aria-label="Apparence">
+      <span className="samlink-theme__titre">Apparence</span>
+      <span className="samlink-theme__choix">
+        {[['system', '🖥️ Système'], ['light', '☀️ Clair'], ['dark', '🌙 Sombre']].map(([v, l]) => (
+          <button key={v} type="button" role="radio" aria-checked={theme === v} className={theme === v ? 'is-on' : ''}
+            onClick={() => { setTheme(v); choisir(v) }}>{l}</button>
+        ))}
+      </span>
+    </div>
+  )
+}
 
 // Écran principal de Sam Link : la messagerie en plein écran, et un menu (☰) pour le compte, les notifications et « À propos ».
 export default function SamLink({ token, onDeconnexion }) {
@@ -83,6 +100,7 @@ export default function SamLink({ token, onDeconnexion }) {
               Connecté en tant que <b>{me.prenom} {me.nom}</b>
               <br /><small>{me.email}</small>
             </p>
+            <ChoixTheme />
             <nav className="samlink-menu" aria-label="Mon compte">
               <button type="button" onClick={() => { setMenu(false); setApropos(true) }}>
                 <span>À propos</span><small>v{APP_VERSION} ›</small>

@@ -80,6 +80,12 @@ export const api = {
     if (replyTo) form.append('replyTo', String(replyTo))
     return request(`/chat/rooms/${roomId}/attachments`, { method: 'POST', token, body: form })
   },
+  chatRoomPhoto: (token, roomId, blob) => {
+    const form = new FormData()
+    form.append('photo', blob, 'photo.jpg')
+    return request(`/chat/rooms/${roomId}/photo`, { method: 'PUT', token, body: form })
+  },
+  chatRoomPhotoDelete: (token, roomId) => request(`/chat/rooms/${roomId}/photo`, { method: 'DELETE', token }),
   chatSendPoll: (token, roomId, data) => request(`/chat/rooms/${roomId}/polls`, { method: 'POST', token, body: JSON.stringify(data) }),
   chatSendEvent: (token, roomId, data) => request(`/chat/rooms/${roomId}/events`, { method: 'POST', token, body: JSON.stringify(data) }),
   chatVote: (token, messageId, optionIds) =>

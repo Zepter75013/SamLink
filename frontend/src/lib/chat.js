@@ -569,6 +569,12 @@ export function useChat(token, meId) {
   const partageIci = useCallback((messageId) => partages.some((p) => p.messageId === messageId), [partages])
 
   // Sourdine : plus de notification pour cette discussion (sauf quand on me mentionne).
+  // Photo d'un salon (créateur ou modérateur) ; blob null = retirer la photo
+  const photoSalon = useCallback(async (roomId, blob) => {
+    const r = blob ? await api.chatRoomPhoto(token, roomId, blob) : await api.chatRoomPhotoDelete(token, roomId)
+    setRooms((rs) => rs.map((x) => (x.id === roomId ? { ...x, photoUrl: r.photoUrl || '' } : x)))
+  }, [token])
+
   const mute = useCallback(async (roomId, muted) => {
     await api.chatMute(token, roomId, muted)
     setRooms((rs) => rs.map((r) => (r.id === roomId ? { ...r, muted } : r)))
@@ -610,5 +616,5 @@ export function useChat(token, meId) {
     return a == null ? null : a + (Date.now() - presence.at) / 1000
   }, [presence])
 
-  return { e2ee, chiffrerHistorique, historiqueAuto, presenceDe, rooms, canCreate, loaded, convs, openId, openRoom, loadMore, send, remove, edit, archive, removeRoom, sendMedia, sendPoll, sendEvent, vote, rsvp, react, typing, quiEcrit, forward, mute, pin, appelsRef, star, importants, cible, allerAuMessage, oublierCible, demarrerLive, arreterLive, partageIci, refreshRooms, unreadTotal, markAllRead, setPanelOpen, online }
+  return { e2ee, chiffrerHistorique, historiqueAuto, presenceDe, rooms, canCreate, loaded, convs, openId, openRoom, loadMore, send, remove, edit, archive, removeRoom, sendMedia, sendPoll, sendEvent, vote, rsvp, react, typing, quiEcrit, forward, mute, pin, appelsRef, star, importants, cible, allerAuMessage, oublierCible, demarrerLive, arreterLive, partageIci, photoSalon, refreshRooms, unreadTotal, markAllRead, setPanelOpen, online }
 }
