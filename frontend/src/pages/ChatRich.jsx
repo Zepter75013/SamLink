@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import BoutonFermer from '../components/BoutonFermer.jsx'
+import { LecteurVocal } from './ChatVocal.jsx'
 import { chatFileUrl } from '../lib/api.js'
 
 // Éléments « riches » de la messagerie : fenêtre, menu d'ajout (fichier, photos et vidéos, sondage, événement),
@@ -156,7 +157,8 @@ function FichierChiffre({ a }) {
 export function Attachments({ items, onOpenImage, onBroken }) {
   const images = items.filter((a) => a.kind === 'image')
   const videos = items.filter((a) => a.kind === 'video')
-  const fichiers = items.filter((a) => a.kind === 'file')
+  const vocaux = items.filter((a) => a.kind === 'file' && a.mime?.startsWith('audio/') && !a.bloque)
+  const fichiers = items.filter((a) => a.kind === 'file' && !vocaux.includes(a))
   const montres = images.slice(0, 4)
   return (
     <div className="chat-media">
@@ -182,6 +184,7 @@ export function Attachments({ items, onOpenImage, onBroken }) {
         ? <VideoChiffree key={a.id} a={a} />
         : <video key={a.id} className="chat-video" controls playsInline preload="metadata" src={chatFileUrl(a.url)} onError={onBroken} />
       ))}
+      {vocaux.map((a) => <LecteurVocal key={a.id} a={a} onBroken={onBroken} />)}
       {fichiers.filter((a) => a.chiffre).map((a) => <FichierChiffre key={a.id} a={a} />)}
       {fichiers.filter((a) => !a.chiffre).map((a) => (
         <a key={a.id} className="chat-file" href={chatFileUrl(a.url)} target="_blank" rel="noreferrer" download={a.nom}>

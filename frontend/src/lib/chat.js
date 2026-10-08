@@ -11,6 +11,7 @@ export function apercu(m) {
   if (m.kind === 'event') return `📅 ${m.event?.titre || 'Événement'}`
   if (m.kind === 'media') {
     const first = m.attachments?.[0]
+    if (first?.mime?.startsWith('audio/')) return `🎤 ${m.texte || 'Message vocal'}`
     const icon = first?.kind === 'image' ? '📷' : first?.kind === 'video' ? '🎥' : '📄'
     return `${icon} ${m.texte || (first?.kind === 'image' ? 'Photo' : first?.kind === 'video' ? 'Vidéo' : 'Document')}`
   }
@@ -135,8 +136,9 @@ export function useChat(token, meId) {
     try {
       const data = await api.chatMessages(token, roomId)
       const messages = await clairs(roomId, data.messages)
+      const pinned = await clairs(roomId, data.pinned || [])
       patchConv(roomId, (c) => ({
-        ...c, loading: false, loaded: true, messages, participants: data.participants || [], otherRead: data.otherRead || 0, more: data.more,
+        ...c, loading: false, loaded: true, messages, pinned, participants: data.participants || [], otherRead: data.otherRead || 0, more: data.more,
       }))
     } catch {
       patchConv(roomId, (c) => ({ ...c, loading: false }))
@@ -254,8 +256,15 @@ export function useChat(token, meId) {
         const modifie = await clairRef.current(data.roomId, data.message)
         patchConv(data.roomId, (c) => ({ ...c, messages: c.messages.map((m) => (m.id === modifie.id ? modifie : m)) }))
         refreshRooms().catch(() => {})
+      } else if (event === 'pins') {
+        const pinned = await Promise.all((data.pinned || []).map((m) => clairRef.current(data.roomId, m)))
+        if (convsRef.current[data.roomId]) patchConv(data.roomId, (c) => ({ ...c, pinned }))
       } else if (event === 'delete') {
-        patchConv(data.roomId, (c) => ({ ...c, messages: c.messages.map((m) => (m.id === data.messageId ? { ...m, deleted: true, texte: '' } : m)) }))
+        patchConv(data.roomId, (c) => ({
+          ...c,
+          messages: c.messages.map((m) => (m.id === data.messageId ? { ...m, deleted: true, texte: '' } : m)),
+          pinned: (c.pinned || []).filter((m) => m.id !== data.messageId),
+        }))
         refreshRooms().catch(() => {})
       } else if (event === 'reaction') {
         patchConv(data.roomId, (c) => ({ ...c, messages: c.messages.map((m) => (m.id === data.messageId ? { ...m, reactions: data.reactions } : m)) }))
@@ -461,6 +470,13 @@ export function useChat(token, meId) {
     return n
   }, [token, send, preparer])
 
+  // Épingler / désépingler un message (3 au plus par discussion).
+  const pin = useCallback(async (roomId, messageId, pinned) => {
+    const r = await api.chatPin(token, messageId, pinned)
+    const liste = await clairs(roomId, r.pinned || [])
+    patchConv(roomId, (c) => ({ ...c, pinned: liste }))
+  }, [token, patchConv, clairs])
+
   // Sourdine : plus de notification pour cette discussion (sauf quand on me mentionne).
   const mute = useCallback(async (roomId, muted) => {
     await api.chatMute(token, roomId, muted)
@@ -503,5 +519,5 @@ export function useChat(token, meId) {
     return a == null ? null : a + (Date.now() - presence.at) / 1000
   }, [presence])
 
-  return { e2ee, chiffrerHistorique, historiqueAuto, presenceDe, rooms, canCreate, loaded, convs, openId, openRoom, loadMore, send, remove, edit, archive, removeRoom, sendMedia, sendPoll, sendEvent, vote, rsvp, react, typing, quiEcrit, forward, mute, refreshRooms, unreadTotal, markAllRead, setPanelOpen, online }
+  return { e2ee, chiffrerHistorique, historiqueAuto, presenceDe, rooms, canCreate, loaded, convs, openId, openRoom, loadMore, send, remove, edit, archive, removeRoom, sendMedia, sendPoll, sendEvent, vote, rsvp, react, typing, quiEcrit, forward, mute, pin, refreshRooms, unreadTotal, markAllRead, setPanelOpen, online }
 }

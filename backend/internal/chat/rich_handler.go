@@ -289,7 +289,7 @@ func (h *Handler) File(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", mimeType)
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.Header().Set("Cache-Control", "private, max-age=3600")
-	w.Header().Set("Content-Disposition", contentDisposition(kind == "image" || kind == "video" || r.URL.Query().Get("inline") == "1" && mimeType == "application/pdf", nom))
+	w.Header().Set("Content-Disposition", contentDisposition(kind == "image" || kind == "video" || strings.HasPrefix(mimeType, "audio/") || r.URL.Query().Get("inline") == "1" && mimeType == "application/pdf", nom))
 	http.ServeContent(w, r, nom, st.ModTime(), f)
 }
 

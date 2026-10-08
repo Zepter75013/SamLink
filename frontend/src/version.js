@@ -4,6 +4,11 @@
 
 export const CHANGELOG = [
   {
+    version: '1.4.0',
+    date: '9 octobre 2026',
+    notes: "Messages vocaux : quand la zone de saisie est vide, le bouton 🎤 lance l'enregistrement (5 minutes au plus), ➤ l'envoie, 🗑 l'annule ; lecture dans la bulle avec vitesse 1×, 1,5× ou 2×. Dans une discussion privée chiffrée, le message vocal est chiffré comme une pièce jointe. Messages épinglés : bouton 📌 d'un message (3 au plus par discussion), bandeau en haut de la conversation qui mène au message ; dans un message privé les deux adhérents peuvent épingler, dans un salon créé son créateur et les modérateurs, dans les salons du club les modérateurs. Toucher une citation mène au message cité. Migration à appliquer (0003 : une nouvelle table, chat_pins).",
+  },
+  {
     version: '1.3.0',
     date: '8 octobre 2026',
     notes: "Fonctions à la WhatsApp : réactions sur les messages (bouton 😊 d'un message, puis 👍 ❤️ 😂 😮 😢 🙏 ou plus) ; « Prénom écrit… » en haut de la discussion et dans la liste ; mise en sourdine d'une discussion (menu ⋮, plus de notification sauf quand on te mentionne) ; transfert d'un message, d'une photo ou d'un document vers une ou plusieurs discussions (bouton ↪, mention « Transféré ») ; recherche dans la discussion ouverte (menu ⋮ › 🔍) ; mentions @ dans les salons (taper @ puis choisir le participant : il est prévenu même en sourdine). Migration à appliquer (0002 : trois nouvelles tables, aucune table existante modifiée).",

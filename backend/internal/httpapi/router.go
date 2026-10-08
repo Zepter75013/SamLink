@@ -77,6 +77,7 @@ func NewRouter(db *sql.DB, cfg config.Config) http.Handler {
 	mux.HandleFunc("PUT /api/chat/messages/{id}/reaction", authService.RequireAuth(chatHandler.React))
 	mux.HandleFunc("POST /api/chat/messages/{id}/forward", authService.RequireAuth(chatHandler.Forward))
 	mux.HandleFunc("POST /api/chat/rooms/{id}/typing", authService.RequireAuth(chatHandler.Typing))
+	mux.HandleFunc("PUT /api/chat/messages/{id}/pin", authService.RequireAuth(chatHandler.Pin))
 	mux.HandleFunc("POST /api/chat/rooms/{id}/mute", authService.RequireAuth(chatHandler.Mute))
 
 	return httpx.CORS(cfg.FrontendURL, mux)

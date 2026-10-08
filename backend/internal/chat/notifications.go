@@ -2,6 +2,7 @@ package chat
 
 import (
 	"fmt"
+	"strings"
 
 	"samlink/backend/internal/notif"
 )
@@ -46,6 +47,9 @@ func (h *Handler) notifier(rr *roomRow, msg *Message, mentions []int64) {
 		}
 		if apercu == "" {
 			apercu = "Photo ou document"
+			if len(msg.Attachments) > 0 && strings.HasPrefix(msg.Attachments[0].Mime, "audio/") {
+				apercu = "Message vocal"
+			}
 		}
 		apercu = "📎 " + apercu
 	case "poll":

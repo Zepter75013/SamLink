@@ -5,6 +5,8 @@
 
 export const IMAGES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
 export const VIDEOS = { '.mp4': 'video/mp4', '.m4v': 'video/mp4', '.mov': 'video/quicktime', '.webm': 'video/webm' }
+// Messages vocaux enregistrés dans le navigateur (WebM/Opus, MP4/AAC, Ogg) ; MP3 accepté aussi
+export const AUDIOS = { '.weba': 'audio/webm', '.m4a': 'audio/mp4', '.ogg': 'audio/ogg', '.mp3': 'audio/mpeg' }
 export const DOCS = {
   '.pdf': 'application/pdf', '.doc': 'application/msword', '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   '.xls': 'application/vnd.ms-excel', '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -29,6 +31,7 @@ export function decrire(file) {
   const ext = extDe(n)
   if (IMAGES.includes(file.type)) return { n, m: file.type, s: file.size, k: 'image' }
   if (VIDEOS[ext]) return { n, m: VIDEOS[ext], s: file.size, k: 'video' }
+  if (AUDIOS[ext]) return { n, m: AUDIOS[ext], s: file.size, k: 'file' }
   if (DOCS[ext]) return { n, m: DOCS[ext], s: file.size, k: 'file' }
   return null
 }
@@ -41,6 +44,7 @@ export function verifierDescription(d) {
   const s = Number.isFinite(d.s) && d.s >= 0 ? d.s : 0
   if (d.k === 'image' && IMAGES.includes(d.m)) return { n, m: d.m, s, k: 'image' }
   if (d.k === 'video' && VIDEOS[ext] && d.m === VIDEOS[ext]) return { n, m: d.m, s, k: 'video' }
+  if (d.k === 'file' && AUDIOS[ext] && d.m === AUDIOS[ext]) return { n, m: d.m, s, k: 'file' }
   if (d.k === 'file' && DOCS[ext] && d.m === DOCS[ext]) return { n, m: d.m, s, k: 'file' }
   return null
 }

@@ -179,6 +179,7 @@ func (h *Handler) Rooms(w http.ResponseWriter, r *http.Request) {
 
 type messagesResponse struct {
 	Messages     []Message     `json:"messages"`
+	Pinned       []Message     `json:"pinned"` // messages épinglés, le plus récent d'abord (premier chargement seulement)
 	Participants []Participant `json:"participants"`
 	OtherRead    int64         `json:"otherRead"`
 	More         bool          `json:"more"`
@@ -209,6 +210,10 @@ func (h *Handler) Messages(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		resp.OtherRead = h.repo.OtherRead(rr.id, p.ID)
+		if resp.Pinned, err = h.repo.Pinned(rr.id, p.ID); err != nil {
+			h.fail(w, err)
+			return
+		}
 	}
 	httpx.JSON(w, http.StatusOK, resp)
 }

@@ -57,7 +57,8 @@ type Room struct {
 	CanAdd    bool   `json:"canAdd"`
 	Archived  bool   `json:"archived"`
 	CanDelete bool   `json:"canDelete"`
-	Muted     bool   `json:"muted"` // en sourdine pour l'adhérent : pas de notification (sauf mention)
+	CanPin    bool   `json:"canPin"` // peut épingler des messages (voir peutEpingler)
+	Muted     bool   `json:"muted"`  // en sourdine pour l'adhérent : pas de notification (sauf mention)
 }
 
 type Reply struct {
@@ -259,13 +260,14 @@ func (r *Repository) Rooms(p *Person) ([]Room, error) {
 			}
 		}
 		room.CanAdd = t.rr.kind == "custom" && t.rr.createdBy == p.ID
+		room.CanPin = peutEpingler(&t.rr, p)
 		var l Last
 		var kind, question, titre string
 		var firstAtt sql.NullString
 		err = r.db.QueryRow(`
 			SELECT m.id, CONCAT(s.prenom, ' ', s.nom), m.body, m.kind, m.created_at,
 			       COALESCE(p.question, ''), COALESCE(e.titre, ''),
-			       (SELECT a.kind FROM chat_attachments a WHERE a.message_id = m.id ORDER BY a.id LIMIT 1)
+			       (SELECT IF(a.mime LIKE 'audio/%', 'audio', a.kind) FROM chat_attachments a WHERE a.message_id = m.id ORDER BY a.id LIMIT 1)
 			FROM chat_messages m
 			JOIN samlink_membres s ON s.id = m.sender_id
 			LEFT JOIN chat_polls p ON p.message_id = m.id
@@ -482,6 +484,7 @@ func (r *Repository) DeleteMessage(id int64, p *Person) (*Message, error) {
 	if _, err := r.db.Exec(`UPDATE chat_messages SET deleted_at = CURRENT_TIMESTAMP, body = '' WHERE id = ? AND deleted_at IS NULL`, id); err != nil {
 		return nil, err
 	}
+	_, _ = r.db.Exec(`DELETE FROM chat_pins WHERE message_id = ?`, id) // un message supprimé n'est plus épinglé
 	return m, nil
 }
 

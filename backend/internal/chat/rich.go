@@ -103,6 +103,8 @@ func previewLabel(kind, body, question, titre, firstAtt string) string {
 	case "media":
 		icon, label := "📄", "Document"
 		switch firstAtt {
+		case "audio":
+			icon, label = "🎤", "Message vocal"
 		case "image":
 			icon, label = "📷", "Photo"
 		case "video":

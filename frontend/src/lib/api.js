@@ -57,6 +57,7 @@ export const api = {
     request(`/chat/rooms/${roomId}/messages`, { method: 'POST', token, body: JSON.stringify({ texte, replyTo: replyTo || 0, mentions, forwarded }) }),
   chatReact: (token, messageId, emoji) => request(`/chat/messages/${messageId}/reaction`, { method: 'PUT', token, body: JSON.stringify({ emoji }) }),
   chatForward: (token, messageId, roomIds) => request(`/chat/messages/${messageId}/forward`, { method: 'POST', token, body: JSON.stringify({ roomIds }) }),
+  chatPin: (token, messageId, pinned) => request(`/chat/messages/${messageId}/pin`, { method: 'PUT', token, body: JSON.stringify({ pinned }) }),
   chatTyping: (token, roomId) => request(`/chat/rooms/${roomId}/typing`, { method: 'POST', token }),
   chatMute: (token, roomId, muted) => request(`/chat/rooms/${roomId}/mute`, { method: 'POST', token, body: JSON.stringify({ muted }) }),
   chatRead: (token, roomId, upTo) => request(`/chat/rooms/${roomId}/read`, { method: 'POST', token, body: JSON.stringify({ upTo }) }),

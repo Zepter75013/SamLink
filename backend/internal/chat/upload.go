@@ -22,6 +22,7 @@ const (
 	maxImageSize   = 20 << 20
 	maxVideoSize   = 100 << 20
 	maxFileSize    = 30 << 20
+	maxAudioSize   = 16 << 20 // message vocal : 5 minutes au plus (enregistrement limité par le navigateur)
 	maxUploadTotal = 300 << 20
 )
 
@@ -47,6 +48,25 @@ var docTypes = map[string]string{
 }
 
 var imageTypes = map[string]string{"image/jpeg": ".jpg", "image/png": ".png", "image/gif": ".gif", "image/webp": ".webp"}
+
+// Messages vocaux (enregistrés par le navigateur : WebM/Opus sous Chrome et Android, MP4/AAC sous Safari et iPhone, Ogg sous Firefox).
+var audioExts = map[string]string{".weba": "audio/webm", ".m4a": "audio/mp4", ".ogg": "audio/ogg", ".mp3": "audio/mpeg"}
+
+// audioReconnu : l'en-tête du fichier correspond bien à un format audio (et non à un document renommé).
+func audioReconnu(ext string, head []byte) bool {
+	switch ext {
+	case ".weba":
+		return len(head) > 4 && head[0] == 0x1A && head[1] == 0x45 && head[2] == 0xDF && head[3] == 0xA3
+	case ".m4a":
+		return len(head) > 12 && string(head[4:8]) == "ftyp"
+	case ".ogg":
+		return len(head) > 4 && string(head[:4]) == "OggS"
+	case ".mp3":
+		return len(head) > 3 && (string(head[:3]) == "ID3" || head[0] == 0xFF && head[1]&0xE0 == 0xE0)
+	}
+	return false
+}
+
 var videoExts = map[string]string{".mp4": "video/mp4", ".m4v": "video/mp4", ".mov": "video/quicktime", ".webm": "video/webm"}
 
 func cleanName(name string) string {
@@ -83,6 +103,9 @@ func saveUpload(part *multipart.Part) (*SavedFile, error) {
 		outExt = imageTypes[sniff]
 	case videoExts[ext] != "" && (sniff == "video/mp4" || sniff == "video/webm" || sniff == "application/octet-stream" || strings.HasPrefix(sniff, "video/") || (len(head) > 12 && string(head[4:8]) == "ftyp")):
 		kind, mimeType, limit = "video", videoExts[ext], maxVideoSize
+		outExt = ext
+	case audioExts[ext] != "" && audioReconnu(ext, head):
+		kind, mimeType, limit = "file", audioExts[ext], maxAudioSize
 		outExt = ext
 	case docTypes[ext] != "":
 		kind, mimeType, limit = "file", docTypes[ext], maxFileSize

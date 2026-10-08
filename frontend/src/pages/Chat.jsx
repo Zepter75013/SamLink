@@ -5,6 +5,7 @@ import { apercu } from '../lib/chat.js'
 import { niveauPresence, derniereConnexion, dureeDeconnexion } from '../lib/presence.js'
 import { BoutonChiffrement, CadenasDiscussion, useStatutDM } from './ChatChiffrement.jsx'
 import { BarreReactions, Reactions, TexteRiche, BarreRecherche, SuggestionsMention, Transfert, mentionEnCours, normaliser, texteCherchable } from './ChatSocial.jsx'
+import { Enregistreur, vocalDisponible } from './ChatVocal.jsx'
 import { Modal, AttachMenu, Attachments, Lightbox, PollCard, EventCard, PollModal, EventModal, taille, iconeFichier } from './ChatRich.jsx'
 
 const EMOJIS = ['😀', '😂', '😅', '😍', '🥰', '😎', '🤩', '🙂', '😉', '🙏', '👍', '👏', '🙌', '💪', '🔥', '🎉', '❤️', '😢', '😮', '🤔',
@@ -108,7 +109,7 @@ function Coches({ message, room, otherRead }) {
 }
 
 function Bulle({ message, room, me, otherRead, onReply, onEdit, onDelete, onVote, onRsvp, onOpenImage, onBroken, showAuteur,
-  reacting, onReacting, onReact, onForward, recherche, trouve }) {
+  reacting, onReacting, onReact, onForward, recherche, trouve, epingle, onPin, onQuote }) {
   const mine = message.senderId === me.id
   const actif = !message.deleted && !message.pending && !message.failed
   const maReaction = message.reactions?.find((r) => r.ids.includes(me.id))?.emoji
@@ -126,7 +127,7 @@ function Bulle({ message, room, me, otherRead, onReply, onEdit, onDelete, onVote
           <b className="chat-author" style={{ color: couleurDe(message.senderId) }}>{message.auteur}</b>
         )}
         {message.reply && (
-          <div className="chat-quote">
+          <div className="chat-quote" role="button" tabIndex={-1} title="Voir le message cité" onClick={() => onQuote(message.reply.id)}>
             <b>{message.reply.auteur}</b>
             <span>{message.reply.texte || '🚫 Message supprimé'}</span>
           </div>
@@ -140,6 +141,7 @@ function Bulle({ message, room, me, otherRead, onReply, onEdit, onDelete, onVote
           </>
         )}
         <span className="chat-meta">
+          {epingle && !message.deleted && <span className="chat-pin-mini" title="Message épinglé">📌</span>}
           {message.chiffre && !message.deleted && <span className="chat-lock-mini" title="Message chiffré de bout en bout">🔒</span>}
           {message.edited && !message.deleted && <em>modifié</em>}
           {heure(message.createdAt)}
@@ -150,6 +152,7 @@ function Bulle({ message, room, me, otherRead, onReply, onEdit, onDelete, onVote
             <button type="button" title="Réagir" onClick={() => onReacting(reacting ? null : message.id)}>😊</button>
             <button type="button" title="Répondre" onClick={() => onReply(message)}>↩</button>
             {transferable && <button type="button" title="Transférer" onClick={() => onForward(message)}>↪</button>}
+            {room.canPin && <button type="button" title={epingle ? 'Désépingler' : 'Épingler'} onClick={() => onPin(message, !epingle)}>{epingle ? '📍' : '📌'}</button>}
             {modifiable && <button type="button" title="Modifier" onClick={() => onEdit(message)}>✏️</button>}
             {canDelete && <button type="button" title="Supprimer" onClick={() => onDelete(message)}>🗑</button>}
           </span>
@@ -347,6 +350,10 @@ function Conversation({ chat, room, token, me, members, onBack, onUnarchived }) 
   const [recherche, setRecherche] = useState(null) // null : fermée ; sinon le texte cherché
   const [trouve, setTrouve] = useState(0) // index du résultat affiché (0 = le plus récent)
   const [mention, setMention] = useState(null) // { debut, q } : « @… » en cours de saisie
+  const [vocal, setVocal] = useState(false) // enregistrement d'un message vocal en cours
+  const [cible, setCible] = useState(null) // message à rejoindre (épinglé, citation) : l'historique est chargé jusqu'à lui
+  const [eclaire, setEclaire] = useState(null) // message mis en évidence un instant après l'avoir rejoint
+  const [epingleVu, setEpingleVu] = useState(0) // message épinglé affiché dans le bandeau
   const [mentions, setMentions] = useState([]) // participants mentionnés dans le message en cours : { id, nom }
   const inputMedias = useRef(null)
   const inputFichiers = useRef(null)
@@ -377,7 +384,7 @@ function Conversation({ chat, room, token, me, members, onBack, onUnarchived }) 
     return () => document.removeEventListener('mousedown', close)
   }, [menu])
 
-  useEffect(() => { bas.current = true; setReply(null); setEditing(null); setTexte(''); setErr(''); setPj(false); setModal(null); setRecherche(null); setMentions([]); setMention(null); viderFichiers(); input.current?.focus() }, [room.id])
+  useEffect(() => { bas.current = true; setReply(null); setEditing(null); setTexte(''); setErr(''); setPj(false); setModal(null); setRecherche(null); setVocal(false); setCible(null); setEpingleVu(0); setMentions([]); setMention(null); viderFichiers(); input.current?.focus() }, [room.id])
 
   // la zone de saisie s'ajuste au texte, y compris quand on le remplit (modification d'un message)
   useLayoutEffect(() => {
@@ -516,6 +523,51 @@ function Conversation({ chat, room, token, me, members, onBack, onUnarchived }) 
     setMention(null)
     curseur.current = mention.debut + insere.length // placé juste après la mention, au prochain rendu
   }
+  // rejoindre un message : chargé au besoin en remontant l'historique (20 pages au plus)
+  const pagesCherchees = useRef(0)
+  useEffect(() => {
+    if (cible == null) return
+    if (conv.messages.some((m) => m.id === cible)) {
+      bas.current = false
+      zone.current?.querySelector(`[data-msg="${cible}"]`)?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+      setEclaire(cible)
+      setCible(null)
+      pagesCherchees.current = 0
+      return
+    }
+    if (conv.loading) return
+    if (!conv.more || pagesCherchees.current >= 20) { setErr('Ce message est trop ancien pour être affiché ici.'); setCible(null); pagesCherchees.current = 0; return }
+    pagesCherchees.current += 1
+    chat.loadMore(room.id)
+  }, [cible, conv.messages, conv.loading, conv.more, chat, room.id])
+  useEffect(() => {
+    if (eclaire == null) return undefined
+    const t = setTimeout(() => setEclaire(null), 1800)
+    return () => clearTimeout(t)
+  }, [eclaire])
+
+  const epingles = conv.pinned || []
+  const idsEpingles = useMemo(() => new Set(epingles.map((m) => m.id)), [epingles])
+  const epingleAffiche = epingles[epingleVu % Math.max(epingles.length, 1)]
+  function ouvrirEpingle() {
+    if (!epingleAffiche) return
+    setCible(epingleAffiche.id)
+    setEpingleVu((i) => (i + 1) % epingles.length) // un clic de plus : l'épinglé suivant
+  }
+  async function epingler(m, oui) {
+    try { await chat.pin(room.id, m.id, oui) } catch (e) { setErr(e.message) }
+  }
+  async function envoyerVocal(file) {
+    setVocal(false)
+    setEnvoi(true)
+    setErr('')
+    try {
+      await chat.sendMedia(room.id, [file], '', reply)
+      setReply(null)
+      bas.current = true
+    } catch (e) { setErr(e.message) } finally { setEnvoi(false) }
+  }
+
   async function reagirA(m, emoji) {
     try { await chat.react(room.id, m.id, emoji) } catch (e) { setErr(e.message) }
   }
@@ -612,6 +664,16 @@ function Conversation({ chat, room, token, me, members, onBack, onUnarchived }) 
           )}
         </div>
       </header>
+      {epingleAffiche && (
+        <div className="chat-pinbar">
+          {epingles.length > 1 && <span className="chat-pinbar__pos" aria-hidden="true">{epingles.map((m, i) => <i key={m.id} className={i === epingleVu % epingles.length ? 'is-on' : ''} />)}</span>}
+          <button type="button" className="chat-pinbar__msg" onClick={ouvrirEpingle} title="Voir le message épinglé">
+            <span aria-hidden="true">📌</span>
+            <span className="chat-pinbar__txt"><b>{epingleAffiche.auteur}</b> {apercu(epingleAffiche) || 'Message'}</span>
+          </button>
+          {room.canPin && <button type="button" className="chat-pinbar__del" onClick={() => epingler(epingleAffiche, false)} aria-label="Désépingler ce message" title="Désépingler">✕</button>}
+        </div>
+      )}
       {recherche != null && (
         <BarreRecherche q={recherche} setQ={setRecherche} total={resultats.length} index={Math.min(trouve, Math.max(resultats.length - 1, 0))}
           onPrev={() => setTrouve((i) => (resultats.length ? (i + 1) % resultats.length : 0))}
@@ -632,7 +694,8 @@ function Conversation({ chat, room, token, me, members, onBack, onUnarchived }) 
               onOpenImage={(images, index) => setVisionneuse({ images, index })}
               onBroken={recharger}
               reacting={reagir === it.m.id} onReacting={setReagir} onReact={reagirA} onForward={setTransfert}
-              recherche={recherche?.trim() || ''} trouve={it.m.id === idTrouve} />))}
+              recherche={recherche?.trim() || ''} trouve={it.m.id === idTrouve || it.m.id === eclaire}
+              epingle={idsEpingles.has(it.m.id)} onPin={epingler} onQuote={setCible} />))}
       </div>
 
       {err && <p className="chat-error chat-error--bar">{err} <button type="button" onClick={() => setErr('')}>✕</button></p>}
@@ -668,6 +731,7 @@ function Conversation({ chat, room, token, me, members, onBack, onUnarchived }) 
         </div>
       )}
       {envoi && <p className="chat-uploading">Envoi en cours…</p>}
+      {vocal ? <Enregistreur onSend={envoyerVocal} onCancel={() => setVocal(false)} onError={setErr} /> : (
       <div className="chat-composer">
         <button type="button" className="chat-emoji-btn" onClick={() => { setEmoji((v) => !v); setPj(false) }} aria-label="Emojis">😊</button>
         {!editing && (
@@ -684,10 +748,13 @@ function Conversation({ chat, room, token, me, members, onBack, onUnarchived }) 
           onBlur={() => setTimeout(() => setMention(null), 150)}
           onPaste={(e) => { const fs = Array.from(e.clipboardData?.files || []); if (fs.length) { e.preventDefault(); ajouterFichiers(fs) } }}
         />
-        <button type="button" className="chat-send" onClick={envoyer} disabled={envoi || (!texte.trim() && fichiers.length === 0)} aria-label={editing ? 'Enregistrer la modification' : 'Envoyer'}>{editing ? '✓' : '➤'}</button>
+        {!editing && !texte.trim() && fichiers.length === 0 && vocalDisponible()
+          ? <button type="button" className="chat-send chat-mic" onClick={() => { setEmoji(false); setPj(false); setVocal(true) }} disabled={envoi} aria-label="Enregistrer un message vocal" title="Message vocal">🎤</button>
+          : <button type="button" className="chat-send" onClick={envoyer} disabled={envoi || (!texte.trim() && fichiers.length === 0)} aria-label={editing ? 'Enregistrer la modification' : 'Envoyer'}>{editing ? '✓' : '➤'}</button>}
       </div>
+      )}
       <input ref={inputMedias} type="file" accept="image/*,video/*" multiple hidden onChange={(e) => { ajouterFichiers(e.target.files); e.target.value = '' }} />
-      <input ref={inputFichiers} type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.odt,.ods,.odp,.txt,.csv,.rtf,.zip,.gpx,.tcx,.kml" multiple hidden onChange={(e) => { ajouterFichiers(e.target.files); e.target.value = '' }} />
+      <input ref={inputFichiers} type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.odt,.ods,.odp,.txt,.csv,.rtf,.zip,.gpx,.tcx,.kml,.mp3,.m4a,.ogg" multiple hidden onChange={(e) => { ajouterFichiers(e.target.files); e.target.value = '' }} />
 
       {modal === 'sondage' && <PollModal onClose={() => setModal(null)} onSend={(d) => chat.sendPoll(room.id, { ...d, replyTo: reply ? reply.id : 0 }).then(() => { setReply(null); bas.current = true })} />}
       {modal === 'evenement' && <EventModal onClose={() => setModal(null)} onSend={(d) => chat.sendEvent(room.id, { ...d, replyTo: reply ? reply.id : 0 }).then(() => { setReply(null); bas.current = true })} />}
