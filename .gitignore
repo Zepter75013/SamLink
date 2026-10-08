@@ -1,0 +1,20 @@
+# Node / frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.env.local
+frontend/.env*.local
+
+# Go
+backend/api
+/tmp/
+
+# Fichiers d'environnement avec de vrais secrets
+.env
+backend/.env
+
+# OS
+.DS_Store
+
+# Pièces jointes de la messagerie : jamais dans le dépôt
+/chat-files/
+backend/uploads/

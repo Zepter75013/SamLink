@@ -1,0 +1,16 @@
+{
+  "name": "Sam Link — SAM Paris 12",
+  "short_name": "Sam Link",
+  "description": "Sam Link, la messagerie des adhérents du SAM Paris 12.",
+  "lang": "fr",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#17120e",
+  "theme_color": "#DE3327",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

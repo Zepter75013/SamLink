@@ -1,0 +1,6 @@
+/* Sam Link : écran de chargement et fenêtre « Mon compte » (le reste vient de index.css, repris de SamParis12) */
+.samlink-chargement { min-height: 100vh; min-height: 100dvh; display: grid; place-content: center; justify-items: center; gap: 0.8rem; color: var(--stone); font-family: var(--font-mono); font-size: 0.8rem; text-align: center; padding: 1rem; }
+.samlink-compte { display: grid; gap: 1rem; padding: 0.2rem 0.2rem 0.6rem; }
+.samlink-compte p { margin: 0; }
+.samlink-compte > .btn { justify-self: start; }
+.chat-list__exit { display: inline-flex; }
