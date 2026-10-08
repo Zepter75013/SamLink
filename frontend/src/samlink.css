@@ -1,9 +1,16 @@
 /* Sam Link : écran de chargement et fenêtre « Mon compte » (le reste vient de index.css, repris de SamParis12) */
 .samlink-chargement { min-height: 100vh; min-height: 100dvh; display: grid; place-content: center; justify-items: center; gap: 0.8rem; color: var(--stone); font-family: var(--font-mono); font-size: 0.8rem; text-align: center; padding: 1rem; }
-.samlink-compte { display: grid; gap: 1rem; padding: 1rem 1rem 1.2rem; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.samlink-compte { display: grid; grid-auto-rows: max-content; gap: 1rem; padding: 1rem 1rem 1.2rem; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
 .samlink-compte p { margin: 0; }
-.samlink-compte__actions { display: flex; flex-wrap: wrap; gap: 0.6rem; }
-.samlink-apropos { padding: 1rem 1rem 1.2rem; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+/* Menu du compte : une liste sobre plutôt que de gros boutons. */
+.samlink-menu { display: grid; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.samlink-menu button { display: flex; align-items: center; justify-content: space-between; gap: 1rem; width: 100%; padding: 0.75rem 1rem; border: 0; background: none; color: var(--ink); font-family: var(--font-display); font-size: 1rem; letter-spacing: 0.04em; text-transform: uppercase; text-align: left; cursor: pointer; }
+.samlink-menu button + button { border-top: 1px solid var(--line); }
+.samlink-menu button:hover { background: var(--surface-2); }
+.samlink-menu small { font-family: var(--font-mono); font-size: 0.85rem; color: var(--stone); letter-spacing: 0.04em; }
+.samlink-menu .is-sortie { color: var(--vermilion); }
+.chat-modal__box .samlink-retour { flex-shrink: 0; align-self: flex-start; margin: 0.8rem 1rem 0; padding: 0.3rem 0.2rem; border: 0; background: none; color: var(--vermilion); font-family: var(--font-display); font-size: 0.95rem; letter-spacing: 0.04em; text-transform: uppercase; cursor: pointer; }
+.samlink-apropos { padding: 0.6rem 1rem 1.2rem; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
 .chat-list__exit { display: inline-flex; }
 
 /* Bouton du bas des fenêtres (« Créer le salon », « Ajouter ») : jamais écrasé ni collé au bord quand la liste est longue. */
