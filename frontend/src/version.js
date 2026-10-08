@@ -4,6 +4,11 @@
 
 export const CHANGELOG = [
   {
+    version: '1.5.1',
+    date: '9 octobre 2026',
+    notes: "Sur téléphone, le menu ⋮ d'une discussion privée était poussé hors de l'écran par les boutons d'appel : il reste maintenant toujours visible (le nom se raccourcit et le cadenas n'affiche plus que son icône). Aucune migration.",
+  },
+  {
     version: '1.5.0',
     date: '9 octobre 2026',
     notes: "Appels audio et vidéo dans les messages privés : boutons 📞 et 🎥 en haut de la discussion. L'appelé reçoit une notification et peut répondre en audio ou en vidéo ; pendant l'appel : couper le micro, couper ou retourner la caméra, raccrocher. Le son et l'image vont directement d'un appareil à l'autre, chiffrés de bout en bout. La discussion garde une trace (« 📞 Appel vocal · 2 min 05 s », « Appel manqué »). Relais TURN facultatif pour les réseaux qui bloquent les appels (voir README). Aucune migration.",

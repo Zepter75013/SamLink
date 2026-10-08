@@ -109,3 +109,14 @@
 .appel__btn.is-on i { background: #fff; color: #111; }
 .appel__btn.is-vert i { background: #25d366; }
 .appel__btn.is-rouge i { background: #e53935; transform: rotate(135deg); }
+
+/* En-tête d'une discussion : le menu ⋮ reste toujours visible, le nom se raccourcit (1.5.1) */
+.chat-conv__head { gap: 0.45rem; }
+.chat-conv__head .chat-menu-wrap, .chat-call-btns, .chat-conv__head .chiffre-cadenas { flex: none; }
+.chat-conv__title b { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 600px) {
+  .chat-conv__head { padding-left: 0.5rem; padding-right: 0.5rem; }
+  .chat-conv__head .chiffre-cadenas { margin-right: 0; padding: 0.3rem 0.45rem; }
+  .chat-conv__head .chiffre-cadenas__txt { display: none; } /* le cadenas seul suffit sur téléphone */
+  .chat-call-btns button { padding: 0.3rem 0.25rem; font-size: 1.05rem; }
+}

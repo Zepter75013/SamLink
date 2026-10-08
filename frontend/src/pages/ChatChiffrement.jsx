@@ -306,7 +306,7 @@ export function CadenasDiscussion({ chat, room, statut, actualiser }) {
   return (
     <>
       <button type="button" className={`chiffre-cadenas chiffre-cadenas--${classe}`} onClick={() => setOuvert(true)} title="Vérifier le chiffrement de cette discussion">
-        <span aria-hidden="true">{icone}</span> {texte}
+        <span aria-hidden="true">{icone}</span> <span className="chiffre-cadenas__txt">{texte}</span>
       </button>
       {ouvert && (
         <Modal titre="Chiffrement de cette discussion" onClose={() => setOuvert(false)}>
