@@ -26,6 +26,7 @@ func NewRouter(db *sql.DB, cfg config.Config) http.Handler {
 	notifService := notif.New(db, cfg, mailer.New(cfg))
 	notifService.Demarrer(context.Background())
 	chatHandler.SetNotifier(notifService)
+	chatHandler.SetICE(chat.ICE{STUN: cfg.STUNURLs, TURN: cfg.TURNURLs, TURNSecret: cfg.TURNSecret})
 
 	mux.HandleFunc("GET /api/health", func(w http.ResponseWriter, r *http.Request) {
 		httpx.JSON(w, http.StatusOK, map[string]string{"status": "ok"})
@@ -78,6 +79,8 @@ func NewRouter(db *sql.DB, cfg config.Config) http.Handler {
 	mux.HandleFunc("POST /api/chat/messages/{id}/forward", authService.RequireAuth(chatHandler.Forward))
 	mux.HandleFunc("POST /api/chat/rooms/{id}/typing", authService.RequireAuth(chatHandler.Typing))
 	mux.HandleFunc("PUT /api/chat/messages/{id}/pin", authService.RequireAuth(chatHandler.Pin))
+	mux.HandleFunc("GET /api/chat/ice", authService.RequireAuth(chatHandler.ICEServers))
+	mux.HandleFunc("POST /api/chat/rooms/{id}/call", authService.RequireAuth(chatHandler.Signal))
 	mux.HandleFunc("POST /api/chat/rooms/{id}/mute", authService.RequireAuth(chatHandler.Mute))
 
 	return httpx.CORS(cfg.FrontendURL, mux)

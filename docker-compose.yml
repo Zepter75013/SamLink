@@ -39,6 +39,38 @@ services:
         aliases:
           - samlink-frontend
 
+  # Relais TURN des appels audio et vidéo (facultatif) : seulement avec  docker compose --profile turn up -d
+  # Il sert quand les deux appareils ne peuvent pas se joindre directement (certains réseaux 4G ou d'entreprise).
+  # Prérequis : TURN_SECRET et TURN_EXTERNAL_IP dans .env, et sur la box les ports 3478 (UDP et TCP) et 49160-49200 (UDP)
+  # redirigés vers le NAS. Voir README, « Appels ».
+  coturn:
+    image: coturn/coturn:4.6.3
+    container_name: samlink-coturn
+    restart: always
+    profiles: ["turn"]
+    network_mode: host
+    command:
+      - -n
+      - --listening-port=3478
+      - --min-port=49160
+      - --max-port=49200
+      - --fingerprint
+      - --use-auth-secret
+      - --static-auth-secret=${TURN_SECRET}
+      - --realm=samlink.juliotte-app.fr
+      - --external-ip=${TURN_EXTERNAL_IP}
+      - --no-cli
+      - --no-tls
+      - --no-dtls
+      - --no-multicast-peers
+      # le relais ne doit jamais servir à joindre le réseau local du club
+      - --denied-peer-ip=0.0.0.0-0.255.255.255
+      - --denied-peer-ip=10.0.0.0-10.255.255.255
+      - --denied-peer-ip=127.0.0.0-127.255.255.255
+      - --denied-peer-ip=169.254.0.0-169.254.255.255
+      - --denied-peer-ip=172.16.0.0-172.31.255.255
+      - --denied-peer-ip=192.168.0.0-192.168.255.255
+
 networks:
   disques-network:
     external: true

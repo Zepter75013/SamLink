@@ -11,7 +11,7 @@ il lit `profil` et `adhesion` à travers une vue, et range ses propres données 
 
 Salons automatiques (Tous les adhérents, Running, Marche nordique, Bureau), salons créés, messages privés, réponses,
 modification et suppression, archivage, lus / non lus, pièces jointes (photos, vidéos, documents), sondages,
-événements avec réponses, messages vocaux, messages épinglés, réactions emoji, « en train d'écrire », sourdine, transfert de messages, recherche dans une
+événements avec réponses, appels audio et vidéo dans les messages privés, messages vocaux, messages épinglés, réactions emoji, « en train d'écrire », sourdine, transfert de messages, recherche dans une
 discussion, mentions @, présence en ligne, notifications push et e-mail, chiffrement de bout en bout des messages
 privés (voir [docs/chiffrement-messages-prives.md](docs/chiffrement-messages-prives.md)). Application installable
 (PWA) sur téléphone.
@@ -131,6 +131,22 @@ par Finance, SamParis12 et Fouléesdu12.
    ```
 
 Mise à jour : relancer le rsync de l'étape 1, puis `docker compose up --build -d` sur le NAS. Les pièces jointes sont gardées dans `chat-files/` sur le NAS.
+
+## Appels
+
+Les appels audio et vidéo (messages privés uniquement) passent directement d'un navigateur à l'autre (WebRTC, chiffré de
+bout en bout par DTLS-SRTP). L'API transmet seulement la signalisation (`POST /api/chat/rooms/{id}/call`, événement SSE
+`call`) et fournit les serveurs STUN/TURN (`GET /api/chat/ice`). Un appel qui sonne est rejoué à l'appelé s'il ouvre Sam
+Link depuis la notification pendant la sonnerie (45 secondes). L'appelant écrit la trace dans la discussion
+(« 📞 Appel vocal · 2 min 05 s », « … manqué »).
+
+Sans relais TURN, la plupart des appels passent (STUN public). Pour ceux qui échouent (« Connexion impossible : le
+réseau bloque l'appel »), lancer le relais coturn sur le NAS :
+
+1. Dans `.env` : `TURN_SECRET` (`openssl rand -hex 32`), `TURN_EXTERNAL_IP` (IP publique de la box), et
+   `TURN_URLS=turn:samlink.juliotte-app.fr:3478?transport=udp,turn:samlink.juliotte-app.fr:3478?transport=tcp`.
+2. Sur la box : rediriger 3478 (UDP et TCP) et 49160-49200 (UDP) vers le NAS.
+3. `docker compose --profile turn up -d` puis redémarrer l'API (`docker compose up -d backend`).
 
 ## Ce qui n'est pas repris de SamParis12
 

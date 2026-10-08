@@ -32,6 +32,11 @@ type Config struct {
 	VAPIDSubject    string
 	NotifDelaiMail  int // minutes d'attente avant l'e-mail d'un message non lu (0 : immédiat)
 
+	// Appels audio et vidéo : serveurs STUN et TURN (coturn, « use-auth-secret ») séparés par des virgules.
+	STUNURLs   []string
+	TURNURLs   []string
+	TURNSecret string
+
 	SMTPHost     string
 	SMTPPort     string
 	SMTPUsername string
@@ -60,6 +65,10 @@ func Load() Config {
 		VAPIDPrivateKey: os.Getenv("VAPID_PRIVATE_KEY"),
 		VAPIDSubject:    getEnv("VAPID_SUBJECT", "contact@samparis12.org"),
 		NotifDelaiMail:  getInt("NOTIF_DELAI_EMAIL_MIN", 60),
+
+		STUNURLs:   getList("STUN_URLS", "stun:stun.l.google.com:19302,stun:stun.cloudflare.com:3478"),
+		TURNURLs:   getList("TURN_URLS", ""),
+		TURNSecret: os.Getenv("TURN_SECRET"),
 
 		SMTPHost:     getEnv("SMTP_HOST", ""),
 		SMTPPort:     getEnv("SMTP_PORT", "587"),
@@ -103,6 +112,17 @@ func getInts(key string, fallback []int64) []int64 {
 	}
 	if len(out) == 0 {
 		return fallback
+	}
+	return out
+}
+
+// getList : liste séparée par des virgules (espaces ignorés).
+func getList(key, fallback string) []string {
+	var out []string
+	for _, v := range strings.Split(getEnv(key, fallback), ",") {
+		if v = strings.TrimSpace(v); v != "" {
+			out = append(out, v)
+		}
 	}
 	return out
 }

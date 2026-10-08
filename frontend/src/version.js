@@ -4,6 +4,11 @@
 
 export const CHANGELOG = [
   {
+    version: '1.5.0',
+    date: '9 octobre 2026',
+    notes: "Appels audio et vidéo dans les messages privés : boutons 📞 et 🎥 en haut de la discussion. L'appelé reçoit une notification et peut répondre en audio ou en vidéo ; pendant l'appel : couper le micro, couper ou retourner la caméra, raccrocher. Le son et l'image vont directement d'un appareil à l'autre, chiffrés de bout en bout. La discussion garde une trace (« 📞 Appel vocal · 2 min 05 s », « Appel manqué »). Relais TURN facultatif pour les réseaux qui bloquent les appels (voir README). Aucune migration.",
+  },
+  {
     version: '1.4.0',
     date: '9 octobre 2026',
     notes: "Messages vocaux : quand la zone de saisie est vide, le bouton 🎤 lance l'enregistrement (5 minutes au plus), ➤ l'envoie, 🗑 l'annule ; lecture dans la bulle avec vitesse 1×, 1,5× ou 2×. Dans une discussion privée chiffrée, le message vocal est chiffré comme une pièce jointe. Messages épinglés : bouton 📌 d'un message (3 au plus par discussion), bandeau en haut de la conversation qui mène au message ; dans un message privé les deux adhérents peuvent épingler, dans un salon créé son créateur et les modérateurs, dans les salons du club les modérateurs. Toucher une citation mène au message cité. Migration à appliquer (0003 : une nouvelle table, chat_pins).",

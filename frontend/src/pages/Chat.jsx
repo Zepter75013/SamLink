@@ -6,6 +6,7 @@ import { niveauPresence, derniereConnexion, dureeDeconnexion } from '../lib/pres
 import { BoutonChiffrement, CadenasDiscussion, useStatutDM } from './ChatChiffrement.jsx'
 import { BarreReactions, Reactions, TexteRiche, BarreRecherche, SuggestionsMention, Transfert, mentionEnCours, normaliser, texteCherchable } from './ChatSocial.jsx'
 import { Enregistreur, vocalDisponible } from './ChatVocal.jsx'
+import { AppelsProvider, useAppels } from './Appels.jsx'
 import { Modal, AttachMenu, Attachments, Lightbox, PollCard, EventCard, PollModal, EventModal, taille, iconeFichier } from './ChatRich.jsx'
 
 const EMOJIS = ['😀', '😂', '😅', '😍', '🥰', '😎', '🤩', '🙂', '😉', '🙏', '👍', '👏', '🙌', '💪', '🔥', '🎉', '❤️', '😢', '😮', '🤔',
@@ -625,6 +626,7 @@ function Conversation({ chat, room, token, me, members, onBack, onUnarchived }) 
   }, [idTrouve])
 
   const ecrivent = chat.quiEcrit(room.id)
+  const appels = useAppels()
   const presenceAutre = usePresence(room.kind === 'dm' ? room.otherId : 0)
   const [statutChiffre, actualiserChiffre] = useStatutDM(chat, room)
   const chiffre = statutChiffre?.statut === 'chiffre' // discussion chiffrée : ni sondage, ni événement
@@ -650,6 +652,12 @@ function Conversation({ chat, room, token, me, members, onBack, onUnarchived }) 
           <b>{room.nom}</b>
           <span className={ecrivent.length ? 'is-typing' : ''}>{sousTitre}</span>
         </button>
+        {room.kind === 'dm' && appels.disponible && (
+          <span className="chat-call-btns">
+            <button type="button" onClick={() => appels.appeler(room, false)} disabled={appels.occupe} aria-label={`Appel vocal avec ${room.nom}`} title="Appel vocal">📞</button>
+            <button type="button" onClick={() => appels.appeler(room, true)} disabled={appels.occupe} aria-label={`Appel vidéo avec ${room.nom}`} title="Appel vidéo">🎥</button>
+          </span>
+        )}
         {room.kind === 'dm' && <CadenasDiscussion chat={chat} room={room} statut={statutChiffre} actualiser={actualiserChiffre} />}
         <div className="chat-menu-wrap">
           <button type="button" className="chat-menu-btn" onClick={() => setMenu((v) => !v)} aria-label="Options de la discussion" aria-expanded={menu}>⋮</button>
@@ -774,7 +782,11 @@ function Conversation({ chat, room, token, me, members, onBack, onUnarchived }) 
 export default function ChatPanel(props) {
   const { chat, me } = props
   const valeur = useMemo(() => ({ de: chat.presenceDe, meId: me?.id || 0 }), [chat.presenceDe, me?.id])
-  return <PresenceCtx.Provider value={valeur}><ChatPanelInterne {...props} /></PresenceCtx.Provider>
+  return (
+    <PresenceCtx.Provider value={valeur}>
+      <AppelsProvider chat={chat} token={props.token} me={me}><ChatPanelInterne {...props} /></AppelsProvider>
+    </PresenceCtx.Provider>
+  )
 }
 
 // Sam Link est une application à part entière : la messagerie occupe toujours tout l'écran (comme WhatsApp Web).

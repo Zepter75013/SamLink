@@ -47,6 +47,7 @@ export function useChat(token, meId) {
   const [ecrivent, setEcrivent] = useState({}) // roomId -> { memberId: { prenom, jusqua } } : « Prénom écrit… »
   const [presence, setPresence] = useState({ at: 0, ages: {} }) // ancienneté (secondes) de la dernière présence de chaque adhérent, au moment `at`
 
+  const appelsRef = useRef(null) // reçoit la signalisation des appels (voir Appels.jsx)
   const openRef = useRef(null)
   const panelRef = useRef(false)
   const roomsRef = useRef([])
@@ -256,6 +257,8 @@ export function useChat(token, meId) {
         const modifie = await clairRef.current(data.roomId, data.message)
         patchConv(data.roomId, (c) => ({ ...c, messages: c.messages.map((m) => (m.id === modifie.id ? modifie : m)) }))
         refreshRooms().catch(() => {})
+      } else if (event === 'call') {
+        appelsRef.current?.(data)
       } else if (event === 'pins') {
         const pinned = await Promise.all((data.pinned || []).map((m) => clairRef.current(data.roomId, m)))
         if (convsRef.current[data.roomId]) patchConv(data.roomId, (c) => ({ ...c, pinned }))
@@ -356,7 +359,8 @@ export function useChat(token, meId) {
       })
       setRooms((rs) => rs.map((r) => (r.id === roomId ? { ...r, last: { id: brut.id, auteur: brut.auteur, texte: apercu(brut), createdAt: brut.createdAt } } : r)))
     } catch (err) {
-      patchConv(roomId, (c) => ({ ...c, messages: c.messages.map((m) => (m.id === tempId ? { ...m, pending: false, failed: true } : m)) }))
+      // envoi automatique (trace d'un appel) : rien ne reste à l'écran en cas d'échec
+      patchConv(roomId, (c) => ({ ...c, messages: options.silencieux ? c.messages.filter((m) => m.id !== tempId) : c.messages.map((m) => (m.id === tempId ? { ...m, pending: false, failed: true } : m)) }))
       throw err
     }
   }, [token, meId, patchConv, preparer, clair])
@@ -519,5 +523,5 @@ export function useChat(token, meId) {
     return a == null ? null : a + (Date.now() - presence.at) / 1000
   }, [presence])
 
-  return { e2ee, chiffrerHistorique, historiqueAuto, presenceDe, rooms, canCreate, loaded, convs, openId, openRoom, loadMore, send, remove, edit, archive, removeRoom, sendMedia, sendPoll, sendEvent, vote, rsvp, react, typing, quiEcrit, forward, mute, pin, refreshRooms, unreadTotal, markAllRead, setPanelOpen, online }
+  return { e2ee, chiffrerHistorique, historiqueAuto, presenceDe, rooms, canCreate, loaded, convs, openId, openRoom, loadMore, send, remove, edit, archive, removeRoom, sendMedia, sendPoll, sendEvent, vote, rsvp, react, typing, quiEcrit, forward, mute, pin, appelsRef, refreshRooms, unreadTotal, markAllRead, setPanelOpen, online }
 }

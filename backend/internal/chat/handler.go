@@ -61,12 +61,16 @@ func (h *Hub) publish(ids []int64, event string, payload any) {
 }
 
 type Handler struct {
-	repo  *Repository
-	hub   *Hub
-	notif *notif.Service // notifications push et e-mail (nil : désactivées)
+	repo   *Repository
+	hub    *Hub
+	notif  *notif.Service // notifications push et e-mail (nil : désactivées)
+	ice    ICE            // serveurs STUN/TURN des appels
+	appels *appels        // appels qui sonnent encore
 }
 
-func NewHandler(repo *Repository) *Handler { return &Handler{repo: repo, hub: NewHub()} }
+func NewHandler(repo *Repository) *Handler {
+	return &Handler{repo: repo, hub: NewHub(), appels: &appels{parID: map[string]appelEnCours{}}}
+}
 
 func (h *Handler) me(w http.ResponseWriter, r *http.Request) *Person {
 	id, _ := auth.MemberIDFromContext(r.Context())
@@ -139,6 +143,7 @@ func (h *Handler) Stream(w http.ResponseWriter, r *http.Request) {
 
 	ch, cancel := h.hub.subscribe(id)
 	defer cancel()
+	h.relancerAppels(id) // un appel qui sonne encore (ouverture de Sam Link depuis la notification)
 	tick := time.NewTicker(25 * time.Second)
 	defer tick.Stop()
 	for {

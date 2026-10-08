@@ -85,3 +85,27 @@
 .chat-vocal-rec__live i { width: 0.7rem; height: 0.7rem; border-radius: 50%; background: #e53935; animation: chat-rec 1s ease-in-out infinite; }
 .chat-vocal-rec__hint { flex: 1; min-width: 0; color: var(--c-sub); font-size: 0.85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 @keyframes chat-rec { 50% { opacity: 0.25; } }
+
+/* ---- Appels audio et vidéo (1.5) ---- */
+.chat-call-btns { display: inline-flex; gap: 0.1rem; }
+.chat-call-btns button { border: 0; background: none; font-size: 1.15rem; padding: 0.3rem 0.4rem; border-radius: 50%; }
+.chat-call-btns button:hover:not(:disabled) { background: var(--c-sel); }
+.chat-call-btns button:disabled { opacity: 0.35; cursor: default; }
+.appel { position: fixed; inset: 0; z-index: 200; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: max(2.5rem, env(safe-area-inset-top)) 1rem max(2rem, env(safe-area-inset-bottom)); background: radial-gradient(circle at 50% 30%, #1f3b4d, #0b141a 70%); color: #fff; overflow: hidden; }
+.appel__distant { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; background: #000; opacity: 0; pointer-events: none; }
+.appel.has-video .appel__distant { opacity: 1; }
+.appel__qui { order: 2; display: grid; place-items: center; }
+.appel__qui img, .appel__qui span { width: 9rem; height: 9rem; border-radius: 50%; object-fit: cover; display: grid; place-items: center; background: #cfd8dc; color: #37474f; font-size: 3rem; font-weight: 700; box-shadow: 0 0 0 10px rgba(255, 255, 255, 0.06), 0 0 0 22px rgba(255, 255, 255, 0.03); }
+.appel__entete { order: 1; position: relative; display: flex; flex-direction: column; align-items: center; gap: 0.25rem; text-align: center; text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6); }
+.appel__entete b { font-size: 1.5rem; font-weight: 600; }
+.appel__entete span { font-size: 0.95rem; opacity: 0.85; font-variant-numeric: tabular-nums; }
+.appel__entete small { font-size: 0.72rem; opacity: 0.6; }
+.appel__local { position: absolute; right: 1rem; bottom: 7.5rem; width: min(28vw, 9.5rem); aspect-ratio: 3 / 4; object-fit: cover; border-radius: 12px; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5); transform: scaleX(-1); background: #111; z-index: 1; }
+.appel__local.is-off { opacity: 0.25; }
+.appel__boutons { order: 3; position: relative; z-index: 2; display: flex; gap: 1.1rem; justify-content: center; flex-wrap: wrap; }
+.appel__btn { display: flex; flex-direction: column; align-items: center; gap: 0.35rem; border: 0; background: none; color: #fff; cursor: pointer; font: inherit; }
+.appel__btn i { width: 3.6rem; height: 3.6rem; border-radius: 50%; display: grid; place-items: center; font-style: normal; font-size: 1.5rem; background: rgba(255, 255, 255, 0.16); backdrop-filter: blur(6px); }
+.appel__btn small { font-size: 0.74rem; opacity: 0.85; }
+.appel__btn.is-on i { background: #fff; color: #111; }
+.appel__btn.is-vert i { background: #25d366; }
+.appel__btn.is-rouge i { background: #e53935; transform: rotate(135deg); }
