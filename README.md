@@ -107,13 +107,20 @@ et sous la page de connexion.
 ## Déploiement (NAS)
 
 Comme SamParis12 : Docker Compose sur le NAS, sur le réseau `disques-manager_disques-network`, avec la base dans le
-conteneur MySQL partagé `bdd-mysql`. Adresse publique : https://samlink.juliotte-app.fr (le reverse-proxy envoie vers
-`samlink-frontend:80`, ou le port 8096 du NAS).
+conteneur MySQL partagé `bdd-mysql`. Adresse publique : https://samlink.juliotte-app.fr ; le proxy inverse du NAS envoie ce nom
+vers `http://localhost:8098` (frontend ; l'API répond aussi en direct sur 8097). Les ports 8091 à 8096 sont déjà pris
+par Finance, SamParis12 et Fouléesdu12.
 
-1. Dans `bdd-mysql`, la base SamProd26db et un utilisateur `SamProd26Admin@'%'` avec tous les droits sur cette base.
-2. Copier `.env.example` en `.env` à la racine et le remplir (`FRONTEND_URL=https://samlink.juliotte-app.fr`,
+1. Envoyer les fichiers depuis le Mac (comme Fouléesdu12) :
+
+   ```bash
+   rsync -avz --delete -e "ssh -p 2222" --include='.env.example' --exclude='.env' --exclude='.env.*' --exclude='frontend/node_modules/' --exclude='frontend/dist/' --exclude='.git/' --exclude='.claude/' --exclude='/chat-files/' --exclude='backend/uploads/' --exclude='.*.tgz' --exclude='.DS_Store' ~/Documents/Developpement/SamLink/ Laurent@192.168.1.79:/share/CACHEDEV1_DATA/Container/SamLink/
+   ```
+
+2. Dans `bdd-mysql`, la base SamProd26db et un utilisateur `SamProd26Admin@'%'` avec tous les droits sur cette base.
+3. Copier `.env.example` en `.env` à la racine et le remplir (`FRONTEND_URL=https://samlink.juliotte-app.fr`,
    `DB_USER`, `DB_PASSWORD`, `JWT_SECRET`…). `DB_HOST` est imposé à `bdd-mysql` par `docker-compose.yml`.
-3. Construire et démarrer, puis créer les tables de Sam Link et la vue (une seule fois, sans risque si relancé) :
+4. Construire et démarrer, puis créer les tables de Sam Link et la vue (une seule fois, sans risque si relancé) :
 
    ```bash
    docker compose up --build -d
@@ -121,7 +128,7 @@ conteneur MySQL partagé `bdd-mysql`. Adresse publique : https://samlink.juliott
    docker restart samlink-backend
    ```
 
-Mise à jour : `git pull && docker compose up --build -d`. Les pièces jointes sont gardées dans `chat-files/` sur le NAS.
+Mise à jour : relancer le rsync de l'étape 1, puis `docker compose up --build -d` sur le NAS. Les pièces jointes sont gardées dans `chat-files/` sur le NAS.
 
 ## Ce qui n'est pas repris de SamParis12
 

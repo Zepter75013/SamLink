@@ -16,7 +16,7 @@ services:
     # Accès direct optionnel (debug/API) — à retirer si un reverse-proxy
     # externe se charge de tout exposer.
     ports:
-      - "8095:8080"
+      - "8097:8080"
     volumes:
       - ./chat-files:/app/uploads/chat
     networks:
@@ -31,7 +31,7 @@ services:
     container_name: samlink-frontend
     restart: always
     ports:
-      - "8096:80"
+      - "8098:80"
     depends_on:
       - backend
     networks:
