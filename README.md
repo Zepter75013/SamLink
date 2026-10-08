@@ -98,10 +98,30 @@ Générer une fois les clés VAPID (`cd backend && go run ./cmd/vapid`) et les r
 e-mails partent (il faut alors le SMTP). Le délai avant l'e-mail d'un message non lu se règle avec
 `NOTIF_DELAI_EMAIL_MIN` (60 minutes par défaut).
 
-## Déploiement
+## Versions
 
-`docker-compose.yml` reprend le schéma de SamParis12 (backend + frontend nginx). Le serveur et la base de production
-restent à décider : renseigner `DB_HOST` vers le MySQL qui héberge SamProd26db.
+Le numéro de version et l'historique des nouveautés sont dans `frontend/src/version.js` (comme SamParis12) : ajouter
+une entrée en haut de `CHANGELOG` à chaque changement notable. Ils s'affichent dans la fenêtre « À propos » du menu ☰
+et sous la page de connexion.
+
+## Déploiement (NAS)
+
+Comme SamParis12 : Docker Compose sur le NAS, sur le réseau `disques-manager_disques-network`, avec la base dans le
+conteneur MySQL partagé `bdd-mysql`. Adresse publique : https://samlink.juliotte-app.fr (le reverse-proxy envoie vers
+`samlink-frontend:80`, ou le port 8096 du NAS).
+
+1. Dans `bdd-mysql`, la base SamProd26db et un utilisateur `SamProd26Admin@'%'` avec tous les droits sur cette base.
+2. Copier `.env.example` en `.env` à la racine et le remplir (`FRONTEND_URL=https://samlink.juliotte-app.fr`,
+   `DB_USER`, `DB_PASSWORD`, `JWT_SECRET`…). `DB_HOST` est imposé à `bdd-mysql` par `docker-compose.yml`.
+3. Construire et démarrer, puis créer les tables de Sam Link et la vue (une seule fois, sans risque si relancé) :
+
+   ```bash
+   docker compose up --build -d
+   docker exec samlink-backend /app/migrate
+   docker restart samlink-backend
+   ```
+
+Mise à jour : `git pull && docker compose up --build -d`. Les pièces jointes sont gardées dans `chat-files/` sur le NAS.
 
 ## Ce qui n'est pas repris de SamParis12
 

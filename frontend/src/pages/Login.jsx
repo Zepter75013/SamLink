@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { api } from '../lib/api.js'
 import { setToken } from '../lib/session.js'
 import PasswordField from '../components/PasswordField.jsx'
+import { APP_VERSION } from '../version.js'
 
 const libelle = { display: 'block', textTransform: 'uppercase', color: 'var(--stone)', letterSpacing: '0.1em', fontSize: '0.7rem' }
 
@@ -82,6 +83,7 @@ export default function Login({ onConnecte, message }) {
 
         <div style={{ textAlign: 'center', marginTop: '1.5rem', fontFamily: 'var(--font-mono)', fontSize: '0.72rem', color: 'var(--stone)' }}>
           Besoin d'aide pour vous connecter ? <a href="mailto:contact@samparis12.org" style={{ color: 'var(--vermilion)', textDecoration: 'underline' }}>contact@samparis12.org</a>
+          <div style={{ marginTop: '0.6rem' }}>Sam Link v{APP_VERSION}</div>
         </div>
       </div>
     </div>

@@ -4,12 +4,15 @@ import { useChat } from '../lib/chat.js'
 import ChatPanel from './Chat.jsx'
 import { Modal } from './ChatRich.jsx'
 import NotificationsPanel from '../components/NotificationsPanel.jsx'
+import AboutContent from '../components/AboutContent.jsx'
+import { APP_VERSION } from '../version.js'
 
-// Écran principal de Sam Link : la messagerie en plein écran, et un menu (☰) pour le compte et les notifications.
+// Écran principal de Sam Link : la messagerie en plein écran, et un menu (☰) pour le compte, les notifications et « À propos ».
 export default function SamLink({ token, onDeconnexion }) {
   const [me, setMe] = useState(null)
   const [members, setMembers] = useState([])
   const [erreur, setErreur] = useState('')
+  const [apropos, setApropos] = useState(false)
   const [menu, setMenu] = useState(() => new URLSearchParams(window.location.search).get('reglages') === 'notifications')
   const chat = useChat(token, me?.id)
 
@@ -79,8 +82,16 @@ export default function SamLink({ token, onDeconnexion }) {
               <br /><small>{me.email}</small>
             </p>
             <NotificationsPanel token={token} />
-            <button type="button" className="btn btn--ghost" onClick={() => onDeconnexion('')}>Se déconnecter</button>
+            <div className="samlink-compte__actions">
+              <button type="button" className="btn btn--ghost" onClick={() => { setMenu(false); setApropos(true) }}>À propos · v{APP_VERSION}</button>
+              <button type="button" className="btn btn--ghost" onClick={() => onDeconnexion('')}>Se déconnecter</button>
+            </div>
           </div>
+        </Modal>
+      )}
+      {apropos && (
+        <Modal titre="À propos" onClose={() => setApropos(false)}>
+          <AboutContent />
         </Modal>
       )}
     </>

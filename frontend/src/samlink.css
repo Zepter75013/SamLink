@@ -2,5 +2,6 @@
 .samlink-chargement { min-height: 100vh; min-height: 100dvh; display: grid; place-content: center; justify-items: center; gap: 0.8rem; color: var(--stone); font-family: var(--font-mono); font-size: 0.8rem; text-align: center; padding: 1rem; }
 .samlink-compte { display: grid; gap: 1rem; padding: 0.2rem 0.2rem 0.6rem; }
 .samlink-compte p { margin: 0; }
-.samlink-compte > .btn { justify-self: start; }
+.samlink-compte__actions { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+.samlink-apropos { padding: 0.2rem 0.2rem 0.6rem; }
 .chat-list__exit { display: inline-flex; }
