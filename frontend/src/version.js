@@ -4,6 +4,11 @@
 
 export const CHANGELOG = [
   {
+    version: '1.11.0',
+    date: '9 octobre 2026',
+    notes: "Fond d'écran des discussions, comme WhatsApp : Paramètres › Apparence propose des couleurs (Ciel, Menthe, Lavande, Pêche, Rose, Sable, Ardoise, Rouge Sam), des motifs (Pois, Aurore, Piste) ou ta propre photo, avec un réglage pour l'atténuer ; s'adapte au mode sombre et est mémorisé sur l'appareil. Les boutons de filtre (Toutes, Non lues…) passent à la ligne au lieu d'être coupés sur ordinateur. Aucune migration.",
+  },
+  {
     version: '1.10.0',
     date: '9 octobre 2026',
     notes: "Filtres en haut des discussions, comme WhatsApp : Toutes, Non lues (avec le nombre), Privés, Groupes, puis tes propres listes. Listes de discussions : ＋ dans la barre des filtres pour en créer une (nom et discussions cochées), ✏️ pour la modifier ou la supprimer, et menu ⋮ d'une discussion › 🗂️ Ranger dans une liste. Tes listes ne sont visibles que de toi et suivent sur tous tes appareils. Adhérents en ligne en haut de la liste, comme Messenger : un appui ouvre le message privé. Migration à appliquer (0007 : deux nouvelles tables, chat_lists et chat_list_rooms).",

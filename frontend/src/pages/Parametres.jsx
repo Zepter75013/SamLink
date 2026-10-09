@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { Modal } from './ChatRich.jsx'
 import { ModalDeverrouiller, ModalGerer, ModalRecuperation } from './ChatChiffrement.jsx'
 import NotificationsPanel from '../components/NotificationsPanel.jsx'
@@ -7,6 +7,7 @@ import AideChiffrement from '../components/AideChiffrement.jsx'
 import { chatFileUrl } from '../lib/api.js'
 import { APP_VERSION } from '../version.js'
 import { getTheme, setTheme } from '../lib/theme.js'
+import { FONDS, getFond, getPhotoFond, getVoile, setFond, setPhotoFond, setVoile, supprimerPhotoFond } from '../lib/fond.js'
 
 // Paramètres, façon Messenger : une page d'accueil (photo, nom, rubriques en liste avec une icône ronde de couleur),
 // chaque rubrique s'ouvre sur sa propre page avec un retour « ‹ ». L'aide est un petit centre d'aide intégré.
@@ -57,8 +58,69 @@ function PageApparence() {
           </button>
         ))}
       </Groupe>
-      <p className="param-note">Le choix est mémorisé sur cet appareil.</p>
+      <ChoixFond />
+      <p className="param-note">Ces choix sont mémorisés sur cet appareil.</p>
     </>
+  )
+}
+
+// Aperçu d'un fond : deux bulles sur le fond, comme dans WhatsApp
+function Apercu({ id, photo }) {
+  return (
+    <span className="param-fond__apercu" data-fond-apercu={id} style={photo ? { '--sl-photo': `url("${photo}")` } : undefined}>
+      <i /><i />
+    </span>
+  )
+}
+
+function ChoixFond() {
+  const [fond, choisir] = useState(getFond)
+  const [photo, setPhoto] = useState(getPhotoFond)
+  const [voile, changerVoile] = useState(getVoile)
+  const [err, setErr] = useState('')
+  const input = useRef(null)
+  function prendre(id) { setFond(id); choisir(id); setErr('') }
+  async function importer(e) {
+    const f = e.target.files?.[0]
+    e.target.value = ''
+    if (!f) return
+    setErr('')
+    try {
+      await setPhotoFond(f)
+      setPhoto(getPhotoFond())
+      choisir('photo')
+    } catch (x) { setErr(x.message) }
+  }
+  return (
+    <Groupe titre="Fond d'écran des discussions">
+      <div className="param-fond">
+        <div className="param-fond__grille" role="radiogroup" aria-label="Fond d'écran">
+          {FONDS.map(([id, nom]) => (
+            <button key={id} type="button" role="radio" aria-checked={fond === id} className={`param-fond__choix${fond === id ? ' is-on' : ''}`} onClick={() => prendre(id)}>
+              <Apercu id={id} />
+              <span>{nom}</span>
+            </button>
+          ))}
+          <button type="button" role="radio" aria-checked={fond === 'photo'} className={`param-fond__choix${fond === 'photo' ? ' is-on' : ''}`}
+            onClick={() => (photo ? prendre('photo') : input.current?.click())}>
+            {photo ? <Apercu id="photo" photo={photo} /> : <span className="param-fond__apercu param-fond__ajout" aria-hidden="true">🖼️</span>}
+            <span>Ma photo</span>
+          </button>
+        </div>
+        <input ref={input} type="file" accept="image/*" hidden onChange={importer} />
+        <div className="param-fond__actions">
+          <button type="button" onClick={() => input.current?.click()}>{photo ? '🖼️ Changer de photo' : '🖼️ Choisir une photo'}</button>
+          {photo && <button type="button" onClick={() => { supprimerPhotoFond(); setPhoto(''); choisir(getFond()) }}>Retirer la photo</button>}
+        </div>
+        {fond === 'photo' && (
+          <label className="param-fond__voile">
+            <span>Atténuer la photo pour mieux lire les messages</span>
+            <input type="range" min="0" max="70" step="5" value={voile} onChange={(e) => { const v = Number(e.target.value); changerVoile(v); setVoile(v) }} />
+          </label>
+        )}
+        {err && <p className="chat-error">{err}</p>}
+      </div>
+    </Groupe>
   )
 }
 
@@ -166,6 +228,8 @@ const SUJETS = [
       <>
         <p>Le menu <b>⋮</b> d'une discussion permet de voir les participants, de changer la photo du salon (créateur et modérateurs), de rechercher, de mettre en <b>sourdine</b>, d'<b>archiver</b> ou de supprimer la discussion de ton écran.</p>
         <p>Les discussions archivées sont regroupées sous « Archivées » en haut de la liste.</p>
+        <p>Les boutons <b>Toutes</b>, <b>Non lues</b>, <b>Privés</b> et <b>Groupes</b> filtrent la liste. Avec <b>＋</b>, crée tes propres <b>listes</b> (Sorties, Bénévoles…) ; <b>✏️</b> modifie la liste affichée, et le menu ⋮ d'une discussion propose « Ranger dans une liste ». Les adhérents connectés apparaissent en haut : un appui ouvre le message privé.</p>
+        <p>Pour changer le <b>fond d'écran</b> des discussions (couleur, motif ou ta photo) : Paramètres › Apparence.</p>
       </>
     ),
   },
@@ -235,7 +299,7 @@ export default function Parametres({ me, token, chat, onClose, onDeconnexion, pa
               <small>{me.email}</small>
             </div>
             <Groupe titre="Préférences">
-              <Ligne icone="🌙" couleur="#5856d6" titre="Apparence" detail={`Mode sombre : ${THEMES[getTheme()] || 'Système'}`} onClick={() => ouvrir('apparence')} />
+              <Ligne icone="🌙" couleur="#5856d6" titre="Apparence" detail={`Mode sombre : ${THEMES[getTheme()] || 'Système'} · fond d'écran`} onClick={() => ouvrir('apparence')} />
               <Ligne icone="🔔" couleur="#e74c3c" titre="Notifications" detail="Sur cet appareil et par e-mail" onClick={() => ouvrir('notifications')} />
             </Groupe>
             <Groupe titre="Compte">

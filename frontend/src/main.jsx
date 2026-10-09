@@ -4,9 +4,11 @@ import './index.css'
 import './samlink.css'
 import App from './App.jsx'
 import { initTheme } from './lib/theme.js'
+import { appliquerFond } from './lib/fond.js'
 import { rechargerNouvelleVersion } from './lib/importModule.js'
 
 initTheme()
+appliquerFond()
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
