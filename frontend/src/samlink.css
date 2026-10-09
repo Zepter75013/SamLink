@@ -193,3 +193,18 @@
 .chat-photo-salon .chat-create { margin: 0; width: 100%; }
 .chat-photo-salon__retirer { border: 0; background: none; color: var(--vermilion); font: inherit; font-weight: 600; cursor: pointer; }
 .chat-photo-salon small { color: var(--stone); font-size: 0.8rem; }
+
+/* ---- Une seule palette pour toute l'application (1.8.1) ----
+   Les fenêtres (Mon compte, À propos, aide…) reprenaient les tons chauds du site du club ; elles prennent maintenant
+   les gris de la messagerie, en clair comme en sombre. Le rouge du club reste la couleur d'accent. */
+:root {
+  --paper: #f0f2f5; --surface: #ffffff; --surface-2: #f0f2f5; --ink: #111b21; --ink-soft: #3b4a54; --stone: #667781; --line: #e2e6e9;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0b141a; --surface: #111b21; --surface-2: #202c33; --ink: #e9edef; --ink-soft: #aebac1; --stone: #8696a0; --line: #2a3942;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0b141a; --surface: #111b21; --surface-2: #202c33; --ink: #e9edef; --ink-soft: #aebac1; --stone: #8696a0; --line: #2a3942;
+}

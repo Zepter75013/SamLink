@@ -28,7 +28,7 @@ export default function AboutContent() {
             onChange={(e) => setSelectedVersion(e.target.value)}
             style={{
               display: 'block', marginTop: '0.6rem', width: '100%', padding: '0.5rem 0.65rem',
-              background: '#fff', color: '#1C1917', border: '1px solid var(--line)',
+              background: 'var(--surface-2)', color: 'var(--ink)', border: '1px solid var(--line)', borderRadius: 'var(--radius-input)',
               fontFamily: 'var(--font-mono)', fontSize: '0.82rem', boxSizing: 'border-box',
             }}
           >

@@ -4,6 +4,11 @@
 
 export const CHANGELOG = [
   {
+    version: '1.8.1',
+    date: '9 octobre 2026',
+    notes: "Couleurs harmonisées : les fenêtres « Mon compte », « À propos », l'aide et les autres fenêtres prennent les mêmes gris que la messagerie (en clair comme en sombre) au lieu des tons beiges et bruns du site du club ; la liste des versions d'« À propos » suit aussi le thème. Aucune migration.",
+  },
+  {
     version: '1.8.0',
     date: '9 octobre 2026',
     notes: "Apparence au choix dans « Mon compte » : Système (suit le téléphone ou l'ordinateur), Clair ou Sombre, mémorisé sur l'appareil. Photo d'un salon : menu ⋮ › 🖼️ Photo du salon (créateur du salon et modérateurs ; salons du club : modérateurs), recadrée au carré et allégée avant l'envoi, visible dans la liste et en haut de la discussion ; « Retirer la photo » revient à l'icône 👥. Sur ordinateur, les en-têtes de la liste et de la discussion ont la même hauteur (ils se chevauchaient en décalé). « 1 participant » au singulier. Migration à appliquer (0006 : une nouvelle table, chat_room_photos).",
