@@ -9,6 +9,7 @@ import { CarteDirect, CartePosition, ModalPosition, lirePosition } from './ChatP
 import { Enregistreur, vocalDisponible } from './ChatVocal.jsx'
 import { AppelsProvider, useAppels } from './Appels.jsx'
 import { ModalPhotoSalon } from './ChatPhoto.jsx'
+import { BarreFiltres, ModalAjoutListe, ModalListe, filtrer, videPour } from './ChatListes.jsx'
 import { Modal, AttachMenu, Attachments, Lightbox, PollCard, EventCard, PollModal, EventModal, taille, iconeFichier } from './ChatRich.jsx'
 
 const EMOJIS = ['😀', '😂', '😅', '😍', '🥰', '😎', '🤩', '🙂', '😉', '🙏', '👍', '👏', '🙌', '💪', '🔥', '🎉', '❤️', '😢', '😮', '🤔',
@@ -689,6 +690,7 @@ function Conversation({ chat, room, token, me, members, onBack, onUnarchived }) 
             <div className="chat-menu" role="menu">
               {room.kind !== 'dm' && <button type="button" role="menuitem" onClick={() => { setMenu(false); setInfos(true) }}>👥 Participants</button>}
               {room.canPhoto && <button type="button" role="menuitem" onClick={() => { setMenu(false); setModal('photo') }}>🖼️ Photo du salon</button>}
+              <button type="button" role="menuitem" onClick={() => { setMenu(false); setModal('listes') }}>🗂️ Ranger dans une liste</button>
               <button type="button" role="menuitem" onClick={() => { setMenu(false); setRecherche('') }}>🔍 Rechercher dans la discussion</button>
               <button type="button" role="menuitem" onClick={basculerSourdine}>{room.muted ? '🔔 Réactiver les notifications' : '🔕 Mettre en sourdine'}</button>
               <button type="button" role="menuitem" onClick={archiver}>{room.archived ? '📤 Désarchiver la discussion' : '🗄️ Archiver la discussion'}</button>
@@ -795,6 +797,8 @@ function Conversation({ chat, room, token, me, members, onBack, onUnarchived }) 
       {visionneuse && <Lightbox images={visionneuse.images} index={visionneuse.index} onClose={() => setVisionneuse(null)} />}
 
       {info && chargerInfo && <InfoMessage message={conv.messages.find((m) => m.id === info.id) || info} charger={chargerInfo} onClose={() => setInfo(null)} />}
+      {modal === 'listes' && <ModalAjoutListe room={room} listes={chat.listes} onSave={chat.enregistrerListe} onClose={() => setModal(null)} onNouvelle={() => setModal('nouvelle-liste')} />}
+      {modal === 'nouvelle-liste' && <ModalListe liste={{ nom: '', roomIds: [room.id] }} rooms={chat.rooms.filter((r) => r.kind !== 'dm' || r.last || r.id === room.id)} onSave={(nom, ids) => chat.enregistrerListe(0, nom, ids)} onClose={() => setModal(null)} />}
       {modal === 'photo' && <ModalPhotoSalon room={room} onClose={() => setModal(null)} onSave={(b) => chat.photoSalon(room.id, b)} />}
       {modal === 'position' && <ModalPosition onClose={() => setModal(null)}
         onLive={(min) => chat.demarrerLive(room.id, min, reply).then(() => { setReply(null); bas.current = true })}
@@ -820,13 +824,52 @@ export default function ChatPanel(props) {
   )
 }
 
+// Adhérents en ligne, en haut de la liste (comme Messenger) : un appui ouvre le message privé
+function EnLigne({ chat, token, me, members }) {
+  const { de } = useContext(PresenceCtx)
+  const [busy, setBusy] = useState(0)
+  const enLigne = members
+    .filter((m) => m.id !== me.id && niveauPresence(de(m.id)) === 'vert')
+    .sort((a, b) => (de(a.id) ?? 1e9) - (de(b.id) ?? 1e9))
+    .slice(0, 30)
+  if (enLigne.length === 0) return null
+  async function ouvrir(m) {
+    setBusy(m.id)
+    try {
+      const existant = chat.rooms.find((r) => r.kind === 'dm' && r.otherId === m.id)
+      if (existant) chat.openRoom(existant.id)
+      else {
+        const { roomId } = await api.chatOpenDM(token, m.id)
+        await chat.refreshRooms()
+        chat.openRoom(roomId)
+      }
+    } catch { /* réessayer */ }
+    setBusy(0)
+  }
+  return (
+    <div className="chat-enligne" aria-label="Adhérents en ligne">
+      {enLigne.map((m) => (
+        <button key={m.id} type="button" className="chat-enligne__item" disabled={busy === m.id} onClick={() => ouvrir(m)} title={`${m.prenom} ${m.nom} · en ligne`}>
+          <Avatar photoUrl={m.photoUrl} nom={`${m.prenom} ${m.nom}`} size={52} niveau="vert" />
+          <span>{m.prenom}</span>
+        </button>
+      ))}
+    </div>
+  )
+}
+
 // Sam Link est une application à part entière : la messagerie occupe toujours tout l'écran (comme WhatsApp Web).
 function ChatPanelInterne({ chat, token, me, members, onMenu }) {
   const [q, setQ] = useState('')
   const [nouveau, setNouveau] = useState(false)
   const [showArchived, setShowArchived] = useState(false)
   const [importants, setImportants] = useState(false)
+  const [editListe, setEditListe] = useState(null) // null | {} (nouvelle) | liste
+  const [filtre, setFiltreEtat] = useState(() => { try { return localStorage.getItem('samlink-filtre') || 'toutes' } catch { return 'toutes' } })
+  const setFiltre = (f) => { setFiltreEtat(f); try { localStorage.setItem('samlink-filtre', f) } catch { /* stockage indisponible */ } }
   const { setPanelOpen } = chat
+  // filtre sur une liste supprimée (ou d'un autre appareil) : retour à « Toutes »
+  const filtreActif = filtre.startsWith('liste:') && !chat.listes.some((l) => `liste:${l.id}` === filtre) ? 'toutes' : filtre
 
   // en plein écran la page derrière ne défile pas
   useEffect(() => {
@@ -840,9 +883,11 @@ function ChatPanelInterne({ chat, token, me, members, onMenu }) {
     return () => setPanelOpen(false)
   }, [setPanelOpen])
 
+  const visibles = useMemo(() => chat.rooms.filter((r) => r.kind !== 'dm' || r.last || r.id === chat.openId), [chat.rooms, chat.openId])
+  const nonLues = visibles.filter((r) => !r.archived && r.unread > 0).length
   const rooms = useMemo(() => {
     const t = q.trim().toLowerCase()
-    return [...chat.rooms]
+    return filtrer([...chat.rooms], showArchived ? 'toutes' : filtreActif, chat.listes)
       .filter((r) => !!r.archived === showArchived)
       .filter((r) => !t || (r.nom || '').toLowerCase().includes(t))
       // les messages privés vides n'apparaissent pas tant qu'on n'a pas écrit
@@ -852,7 +897,7 @@ function ChatPanelInterne({ chat, token, me, members, onMenu }) {
         const tb = b.last ? new Date(b.last.createdAt).getTime() : 0
         return tb - ta || (a.nom || '').localeCompare(b.nom || '', 'fr')
       })
-  }, [chat.rooms, chat.openId, q, showArchived])
+  }, [chat.rooms, chat.openId, q, showArchived, filtreActif, chat.listes])
 
   const archivees = chat.rooms.filter((r) => r.archived)
   const archiveesNonLues = archivees.reduce((n, r) => n + (r.unread || 0), 0)
@@ -880,9 +925,14 @@ function ChatPanelInterne({ chat, token, me, members, onMenu }) {
           </div>
           <input className="chat-search" placeholder="Rechercher une discussion" value={q} onChange={(e) => setQ(e.target.value)} />
           {!chat.online && <p className="chat-offline">Connexion perdue, reconnexion…</p>}
+          {!showArchived && (
+            <BarreFiltres filtre={filtreActif} onFiltre={setFiltre} nonLues={nonLues} listes={chat.listes}
+              onNouvelle={() => setEditListe({})} onModifier={(l) => setEditListe(l)} />
+          )}
           <div className="chat-list__rows">
+            {!showArchived && !q.trim() && filtreActif === 'toutes' && <EnLigne chat={chat} token={token} me={me} members={members} />}
             {!chat.loaded && <p className="chat-empty">Chargement…</p>}
-            {!showArchived && archivees.length > 0 && (
+            {!showArchived && filtreActif === 'toutes' && archivees.length > 0 && (
               <button type="button" className="chat-room chat-room--archives" onClick={() => setShowArchived(true)}>
                 <span className="chat-avatar chat-avatar--groupe" style={{ width: 46, height: 46, fontSize: 20 }}>🗄️</span>
                 <span className="chat-room__main">
@@ -908,7 +958,7 @@ function ChatPanelInterne({ chat, token, me, members, onMenu }) {
                 </span>
               </button>
             ))}
-            {chat.loaded && rooms.length === 0 && <p className="chat-empty">{showArchived ? 'Aucune discussion archivée.' : 'Aucune discussion.'}</p>}
+            {chat.loaded && rooms.length === 0 && <p className="chat-empty">{showArchived ? 'Aucune discussion archivée.' : q.trim() ? 'Aucune discussion trouvée.' : videPour(filtreActif, chat.listes)}</p>}
           </div>
         </aside>
 
@@ -917,6 +967,11 @@ function ChatPanelInterne({ chat, token, me, members, onMenu }) {
           : <section className="chat-conv chat-conv--vide"><p>Sélectionne une discussion<br />ou démarre-en une avec ＋</p></section>}
       </div>
       {importants && <ListeImportants chat={chat} onClose={() => setImportants(false)} />}
+      {editListe && (
+        <ModalListe liste={editListe.id ? editListe : null} rooms={visibles} onClose={() => setEditListe(null)}
+          onSave={async (nom, ids) => { const id = await chat.enregistrerListe(editListe.id || 0, nom, ids); setFiltre(`liste:${id}`) }}
+          onDelete={async () => { await chat.supprimerListe(editListe.id); setFiltre('toutes') }} />
+      )}
       {nouveau && <NouvelleDiscussion chat={chat} token={token} me={me} members={members} onClose={() => setNouveau(false)} />}
     </div>
   )

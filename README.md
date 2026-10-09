@@ -57,7 +57,7 @@ INSERT INTO chat_droits (member_id, creer_salons, moderer) VALUES (<id_profil>, 
 `chat_messages`, `chat_reads`, `chat_room_prefs`, `chat_attachments`, `chat_polls`, `chat_poll_options`,
 `chat_poll_votes`, `chat_events`, `chat_event_rsvps`, `chat_droits`, `notif_prefs`, `push_subscriptions`,
 `notifications`, `member_presence`, `member_keys`, `device_links`, puis (migration `0002_reactions_sourdine.sql`)
-`chat_reactions`, `chat_mutes`, `chat_forwarded`, puis (`0003_epingles.sql`) `chat_pins`, puis (`0004_importants.sql`) `chat_stars`, puis (`0005_position_direct.sql`) `chat_live`, puis (`0006_photo_salon.sql`) `chat_room_photos`, plus la vue `samlink_membres`. Leurs clés étrangères
+`chat_reactions`, `chat_mutes`, `chat_forwarded`, puis (`0003_epingles.sql`) `chat_pins`, puis (`0004_importants.sql`) `chat_stars`, puis (`0005_position_direct.sql`) `chat_live`, puis (`0006_photo_salon.sql`) `chat_room_photos`, puis (`0007_listes.sql`) `chat_lists` et `chat_list_rooms`, plus la vue `samlink_membres`. Leurs clés étrangères
 pointent vers `profil(id_profil)` (suppression d'une fiche = suppression de ses messages).
 
 ## Développement local

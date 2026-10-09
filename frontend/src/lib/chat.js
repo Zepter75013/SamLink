@@ -286,6 +286,8 @@ export function useChat(token, meId) {
         setEcrivent((e) => ({ ...e, [data.roomId]: { ...(e[data.roomId] || {}), [data.memberId]: { prenom: data.prenom, jusqua } } }))
       } else if (event === 'rooms') {
         refreshRooms().catch(() => {})
+      } else if (event === 'lists') {
+        setListes(data.lists || [])
       }
       if (event === 'message' && data.message) {
         // un message reçu met fin au « écrit… » de son auteur
@@ -569,6 +571,22 @@ export function useChat(token, meId) {
   const partageIci = useCallback((messageId) => partages.some((p) => p.messageId === messageId), [partages])
 
   // Sourdine : plus de notification pour cette discussion (sauf quand on me mentionne).
+  // Listes de discussions de l'adhérent (filtres en haut de la liste, comme WhatsApp)
+  const [listes, setListes] = useState([])
+  useEffect(() => {
+    if (!token) return
+    api.chatLists(token).then((d) => setListes(d.lists || [])).catch(() => {})
+  }, [token])
+  const enregistrerListe = useCallback(async (id, nom, roomIds) => {
+    const d = await api.chatListSave(token, id, nom, roomIds)
+    setListes(d.lists || [])
+    return d.id
+  }, [token])
+  const supprimerListe = useCallback(async (id) => {
+    const d = await api.chatListDelete(token, id)
+    setListes(d.lists || [])
+  }, [token])
+
   // Photo d'un salon (créateur ou modérateur) ; blob null = retirer la photo
   const photoSalon = useCallback(async (roomId, blob) => {
     const r = blob ? await api.chatRoomPhoto(token, roomId, blob) : await api.chatRoomPhotoDelete(token, roomId)
@@ -616,5 +634,5 @@ export function useChat(token, meId) {
     return a == null ? null : a + (Date.now() - presence.at) / 1000
   }, [presence])
 
-  return { e2ee, chiffrerHistorique, historiqueAuto, presenceDe, rooms, canCreate, loaded, convs, openId, openRoom, loadMore, send, remove, edit, archive, removeRoom, sendMedia, sendPoll, sendEvent, vote, rsvp, react, typing, quiEcrit, forward, mute, pin, appelsRef, star, importants, cible, allerAuMessage, oublierCible, demarrerLive, arreterLive, partageIci, photoSalon, refreshRooms, unreadTotal, markAllRead, setPanelOpen, online }
+  return { e2ee, chiffrerHistorique, historiqueAuto, presenceDe, rooms, canCreate, loaded, convs, openId, openRoom, loadMore, send, remove, edit, archive, removeRoom, sendMedia, sendPoll, sendEvent, vote, rsvp, react, typing, quiEcrit, forward, mute, pin, appelsRef, star, importants, cible, allerAuMessage, oublierCible, demarrerLive, arreterLive, partageIci, photoSalon, listes, enregistrerListe, supprimerListe, refreshRooms, unreadTotal, markAllRead, setPanelOpen, online }
 }

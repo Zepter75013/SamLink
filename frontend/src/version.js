@@ -4,6 +4,11 @@
 
 export const CHANGELOG = [
   {
+    version: '1.10.0',
+    date: '9 octobre 2026',
+    notes: "Filtres en haut des discussions, comme WhatsApp : Toutes, Non lues (avec le nombre), Privés, Groupes, puis tes propres listes. Listes de discussions : ＋ dans la barre des filtres pour en créer une (nom et discussions cochées), ✏️ pour la modifier ou la supprimer, et menu ⋮ d'une discussion › 🗂️ Ranger dans une liste. Tes listes ne sont visibles que de toi et suivent sur tous tes appareils. Adhérents en ligne en haut de la liste, comme Messenger : un appui ouvre le message privé. Migration à appliquer (0007 : deux nouvelles tables, chat_lists et chat_list_rooms).",
+  },
+  {
     version: '1.9.0',
     date: '9 octobre 2026',
     notes: "Paramètres façon Messenger : le bouton ☰ ouvre une page avec ta photo et ton nom, puis des rubriques en liste (Apparence, Notifications, Confidentialité et sécurité, Centre d'aide, À propos, Se déconnecter) qui s'ouvrent chacune sur leur page avec un retour ‹. Confidentialité et sécurité regroupe l'état du chiffrement, la clé de récupération et les explications. Nouveau Centre d'aide avec recherche : premiers pas, installation, messages, contenus, position, appels, organisation des discussions, chiffrement, notifications. Plein écran sur téléphone. Aucune migration.",
