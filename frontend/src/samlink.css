@@ -16,6 +16,10 @@
 /* Bouton du bas des fenêtres (« Créer le salon », « Ajouter ») : jamais écrasé ni collé au bord quand la liste est longue. */
 /* Boutons des fenêtres : arrondis, sur une ligne, en minuscules (façon Messenger), avec de l'air dessous. */
 .chat-modal__box > .chat-create { flex-shrink: 0; margin: 0.8rem 1rem 1.3rem; }
+/* Fenêtres avec une liste d'adhérents ou de discussions : presque toute la hauteur de l'écran pour en voir davantage. */
+.chat-modal__box:has(.chat-pick) { max-height: calc(100vh - 2rem); max-height: calc(100dvh - 2rem); }
+.chat-modal__box:has(.chat-pick) .chat-pick { flex: 1 1 auto; min-height: 8rem; }
+.chat-modal__box .chat-pick__row { padding-block: 0.35rem; }
 .chat-modal__box .btn.chat-create { justify-content: center; min-height: 2.9rem; padding: 0.7rem 1.2rem; border-radius: 999px; font-family: var(--font-body); font-size: 1rem; font-weight: 600; letter-spacing: 0; text-transform: none; line-height: 1.2; text-align: center; }
 .chat-modal__box .btn--solid.chat-create { box-shadow: 0 2px 8px color-mix(in srgb, var(--vermilion) 35%, transparent); }
 .chat-modal__box .btn--solid.chat-create:disabled { box-shadow: none; opacity: 0.45; cursor: default; }

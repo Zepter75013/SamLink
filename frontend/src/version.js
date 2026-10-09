@@ -4,6 +4,11 @@
 
 export const CHANGELOG = [
   {
+    version: '1.11.2',
+    date: '9 octobre 2026',
+    notes: "Les fenêtres avec une liste d'adhérents ou de discussions (nouvelle discussion, nouveau salon, ajout de participants, transfert, listes) prennent presque toute la hauteur de l'écran et les lignes sont plus serrées : on voit environ deux fois plus d'adhérents d'un coup. Aucune migration.",
+  },
+  {
     version: '1.11.1',
     date: '9 octobre 2026',
     notes: "Fenêtre « Nouvelle discussion » plus soignée : photo et nom des adhérents alignés à gauche (le picto d'activité reste à droite), cases à cocher rondes, bouton « Créer le salon · n participants » arrondi sur une seule ligne, avec de l'espace en dessous. Les autres boutons des fenêtres (Ajouter, Envoyer, Enregistrer…) prennent le même style. Aucune migration.",
