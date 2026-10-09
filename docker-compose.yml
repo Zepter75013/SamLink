@@ -56,9 +56,9 @@ services:
       - --max-port=49200
       - --fingerprint
       - --use-auth-secret
-      - --static-auth-secret=${TURN_SECRET}
+      - --static-auth-secret=${TURN_SECRET:-}
       - --realm=samlink.juliotte-app.fr
-      - --external-ip=${TURN_EXTERNAL_IP}
+      - --external-ip=${TURN_EXTERNAL_IP:-}
       - --no-cli
       - --no-tls
       - --no-dtls
