@@ -58,7 +58,7 @@ function FormCle({ onSubmit, occupe }) {
 }
 
 // Clé de récupération générée automatiquement : à noter une fois, pour retrouver ses messages sur un autre appareil
-function ModalRecuperation({ e2ee, onClose }) {
+export function ModalRecuperation({ e2ee, onClose }) {
   const [note, setNote] = useState(false)
   const [copie, setCopie] = useState(false)
   async function copier() {
@@ -111,7 +111,7 @@ function FormLiaison({ e2ee, onFini, onRetour }) {
 }
 
 // Deux façons de déverrouiller un nouvel appareil : avec un autre appareil déjà déverrouillé (code à saisir là-bas), ou avec la clé de récupération
-function ModalDeverrouiller({ e2ee, onClose, onAide }) {
+export function ModalDeverrouiller({ e2ee, onClose, onAide }) {
   const [occupe, setOcc] = useState(false)
   const [err, setErr] = useState('')
   const [oubli, setOubli] = useState(false)
@@ -182,7 +182,7 @@ function ModalDeverrouiller({ e2ee, onClose, onAide }) {
   )
 }
 
-function ModalGerer({ e2ee, chat, onClose, onRecup, onAide }) {
+export function ModalGerer({ e2ee, chat, onClose, onRecup, onAide }) {
   const [vue, setVue] = useState('menu')
   const [msg, setMsg] = useState(null)
   const [occupe, setOcc] = useState(false)

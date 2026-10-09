@@ -866,7 +866,7 @@ function ChatPanelInterne({ chat, token, me, members, onMenu }) {
           <div className="chat-list__head">
             {!showArchived && (
               <span className="chat-list__exit">
-                <button type="button" onClick={onMenu} title="Mon compte et notifications" aria-label="Mon compte et notifications">☰</button>
+                <button type="button" onClick={onMenu} title="Paramètres" aria-label="Paramètres">☰</button>
               </span>
             )}
             {showArchived

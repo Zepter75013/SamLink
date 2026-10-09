@@ -4,6 +4,11 @@
 
 export const CHANGELOG = [
   {
+    version: '1.9.0',
+    date: '9 octobre 2026',
+    notes: "Paramètres façon Messenger : le bouton ☰ ouvre une page avec ta photo et ton nom, puis des rubriques en liste (Apparence, Notifications, Confidentialité et sécurité, Centre d'aide, À propos, Se déconnecter) qui s'ouvrent chacune sur leur page avec un retour ‹. Confidentialité et sécurité regroupe l'état du chiffrement, la clé de récupération et les explications. Nouveau Centre d'aide avec recherche : premiers pas, installation, messages, contenus, position, appels, organisation des discussions, chiffrement, notifications. Plein écran sur téléphone. Aucune migration.",
+  },
+  {
     version: '1.8.1',
     date: '9 octobre 2026',
     notes: "Couleurs harmonisées : les fenêtres « Mon compte », « À propos », l'aide et les autres fenêtres prennent les mêmes gris que la messagerie (en clair comme en sombre) au lieu des tons beiges et bruns du site du club ; la liste des versions d'« À propos » suit aussi le thème. Aucune migration.",

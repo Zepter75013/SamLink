@@ -2,37 +2,15 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { api } from '../lib/api.js'
 import { useChat } from '../lib/chat.js'
 import ChatPanel from './Chat.jsx'
-import { Modal } from './ChatRich.jsx'
-import NotificationsPanel from '../components/NotificationsPanel.jsx'
-import AboutContent from '../components/AboutContent.jsx'
-import AideChiffrement from '../components/AideChiffrement.jsx'
-import { APP_VERSION } from '../version.js'
-import { getTheme, setTheme } from '../lib/theme.js'
+import Parametres from './Parametres.jsx'
 
-// Apparence : suit le réglage du téléphone ou de l'ordinateur (Système), ou force le thème clair ou sombre
-function ChoixTheme() {
-  const [theme, choisir] = useState(getTheme)
-  return (
-    <div className="samlink-theme" role="radiogroup" aria-label="Apparence">
-      <span className="samlink-theme__titre">Apparence</span>
-      <span className="samlink-theme__choix">
-        {[['system', '🖥️ Système'], ['light', '☀️ Clair'], ['dark', '🌙 Sombre']].map(([v, l]) => (
-          <button key={v} type="button" role="radio" aria-checked={theme === v} className={theme === v ? 'is-on' : ''}
-            onClick={() => { setTheme(v); choisir(v) }}>{l}</button>
-        ))}
-      </span>
-    </div>
-  )
-}
-
-// Écran principal de Sam Link : la messagerie en plein écran, et un menu (☰) pour le compte, les notifications et « À propos ».
+// Écran principal de Sam Link : la messagerie en plein écran, et le bouton ☰ pour les paramètres (façon Messenger).
 export default function SamLink({ token, onDeconnexion }) {
   const [me, setMe] = useState(null)
   const [members, setMembers] = useState([])
   const [erreur, setErreur] = useState('')
-  const [apropos, setApropos] = useState(false)
-  const [aide, setAide] = useState(false)
-  const [menu, setMenu] = useState(() => new URLSearchParams(window.location.search).get('reglages') === 'notifications')
+  // Paramètres ouverts : null (fermés), '' (accueil) ou une rubrique ('notifications' depuis le lien d'une notification)
+  const [menu, setMenu] = useState(() => (new URLSearchParams(window.location.search).get('reglages') === 'notifications' ? 'notifications' : null))
   const chat = useChat(token, me?.id)
 
   useEffect(() => {
@@ -68,7 +46,7 @@ export default function SamLink({ token, onDeconnexion }) {
     const u = new URL(href, window.location.origin)
     const salon = Number(u.searchParams.get('salon'))
     if (salon > 0) openRoom(salon)
-    if (u.searchParams.get('reglages') === 'notifications') setMenu(true)
+    if (u.searchParams.get('reglages') === 'notifications') setMenu('notifications')
   }, [openRoom])
   const lienTraite = useRef(false)
   useEffect(() => {
@@ -76,7 +54,7 @@ export default function SamLink({ token, onDeconnexion }) {
     lienTraite.current = true
     if (!window.location.search) return
     const salon = Number(new URLSearchParams(window.location.search).get('salon'))
-    if (salon > 0) openRoom(salon) // ?reglages=… : la fenêtre « Mon compte » est déjà ouverte (état initial)
+    if (salon > 0) openRoom(salon) // ?reglages=… : les paramètres sont déjà ouverts (état initial)
     window.history.replaceState({}, '', window.location.pathname)
   }, [openRoom])
   useEffect(() => {
@@ -92,41 +70,9 @@ export default function SamLink({ token, onDeconnexion }) {
 
   return (
     <>
-      <ChatPanel chat={chat} token={token} me={me} members={members} onMenu={() => setMenu(true)} />
-      {menu && (
-        <Modal titre="Mon compte" onClose={() => setMenu(false)} large>
-          <div className="samlink-compte">
-            <p>
-              Connecté en tant que <b>{me.prenom} {me.nom}</b>
-              <br /><small>{me.email}</small>
-            </p>
-            <ChoixTheme />
-            <nav className="samlink-menu" aria-label="Mon compte">
-              <button type="button" onClick={() => { setMenu(false); setApropos(true) }}>
-                <span>À propos</span><small>v{APP_VERSION} ›</small>
-              </button>
-              <button type="button" onClick={() => { setMenu(false); setAide(true) }}>
-                <span>Aide · messages chiffrés</span><small>›</small>
-              </button>
-              <button type="button" className="is-sortie" onClick={() => onDeconnexion('')}>
-                <span>Se déconnecter</span>
-              </button>
-            </nav>
-            <NotificationsPanel token={token} />
-          </div>
-        </Modal>
-      )}
-      {aide && (
-        <Modal titre="Aide · messages chiffrés" onClose={() => setAide(false)}>
-          <button type="button" className="samlink-retour" onClick={() => { setAide(false); setMenu(true) }}>‹ Mon compte</button>
-          <AideChiffrement />
-        </Modal>
-      )}
-      {apropos && (
-        <Modal titre="À propos" onClose={() => setApropos(false)}>
-          <button type="button" className="samlink-retour" onClick={() => { setApropos(false); setMenu(true) }}>‹ Mon compte</button>
-          <AboutContent />
-        </Modal>
+      <ChatPanel chat={chat} token={token} me={me} members={members} onMenu={() => setMenu('')} />
+      {menu !== null && (
+        <Parametres key={menu} me={me} token={token} chat={chat} pageInitiale={menu || null} onClose={() => setMenu(null)} onDeconnexion={onDeconnexion} />
       )}
     </>
   )

@@ -181,12 +181,6 @@
 
 /* ---- En-têtes alignés, apparence, photo du salon (1.8) ---- */
 .chat--full .chat-list__head, .chat--full .chat-conv__head { box-sizing: border-box; min-height: 4.8rem; }
-.samlink-theme { display: grid; gap: 0.45rem; margin-bottom: 1rem; }
-.samlink-theme__titre { font-family: var(--font-mono); font-size: 0.8rem; color: var(--stone); letter-spacing: 0.04em; text-transform: uppercase; }
-.samlink-theme__choix { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
-.samlink-theme__choix button { padding: 0.6rem 0.3rem; border: 0; background: none; color: var(--ink); font: inherit; font-size: 0.92rem; cursor: pointer; }
-.samlink-theme__choix button + button { border-left: 1px solid var(--line); }
-.samlink-theme__choix button.is-on { background: var(--vermilion); color: #fff; font-weight: 600; }
 .chat-photo-salon { display: grid; justify-items: center; gap: 0.7rem; padding: 1.2rem 1rem 1.3rem; text-align: center; }
 .chat-photo-salon__img { width: 9rem; height: 9rem; border-radius: 50%; object-fit: cover; display: grid; place-content: center; font-size: 3.5rem; background: #cfd8dc; }
 .chat-photo-salon__choisir { cursor: pointer; }
@@ -207,4 +201,45 @@
 }
 :root[data-theme="dark"] {
   --paper: #0b141a; --surface: #111b21; --surface-2: #202c33; --ink: #e9edef; --ink-soft: #aebac1; --stone: #8696a0; --line: #2a3942;
+}
+
+/* ---- Paramètres façon Messenger (1.9) ---- */
+.param { display: grid; grid-auto-rows: max-content; gap: 1.1rem; padding: 0.9rem 1.1rem 1.4rem; min-height: 0; overflow-y: auto; overscroll-behavior: contain; background: var(--paper); }
+.chat-modal__box.is-large:has(.param) { background: var(--paper); }
+.param .param-retour { justify-self: start; border: 0; background: none; padding: 0.2rem 0; color: #0a7cff; font: inherit; font-weight: 600; cursor: pointer; }
+.param-profil { display: grid; justify-items: center; gap: 0.25rem; padding: 0.6rem 0 0.2rem; text-align: center; }
+.param-profil__photo { width: 5.5rem; height: 5.5rem; border-radius: 50%; object-fit: cover; margin-bottom: 0.4rem; }
+.param-profil__photo--ini { display: grid; place-content: center; background: #cfd8dc; color: #37474f; font-weight: 700; font-size: 2rem; }
+.param-profil b { font-size: 1.3rem; }
+.param-profil small { color: var(--stone); }
+.param-groupe { display: grid; gap: 0.4rem; }
+.param-groupe h3 { margin: 0 0 0 0.3rem; font: 600 0.8rem var(--font-body); color: var(--stone); text-transform: none; letter-spacing: 0; }
+.param-carte { display: grid; background: var(--surface); border-radius: 14px; overflow: hidden; }
+.param-ligne { display: flex; align-items: center; gap: 0.8rem; width: 100%; padding: 0.7rem 0.9rem; border: 0; background: none; color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
+.param-ligne + .param-ligne { position: relative; }
+.param-ligne + .param-ligne::before { content: ''; position: absolute; top: 0; left: 3.8rem; right: 0; border-top: 1px solid var(--line); }
+.param-ligne:hover { background: var(--surface-2); }
+.param-ligne__icone { flex: none; width: 2.1rem; height: 2.1rem; border-radius: 50%; display: grid; place-content: center; font-size: 1rem; color: #fff; }
+.param-ligne__icone--neutre { background: var(--surface-2); }
+.param-ligne__texte { flex: 1; min-width: 0; display: grid; gap: 0.1rem; }
+.param-ligne__texte b { font-weight: 600; font-size: 0.98rem; }
+.param-ligne__texte small { color: var(--stone); font-size: 0.82rem; }
+.param-ligne__chevron { color: var(--stone); font-size: 1.3rem; line-height: 1; }
+.param-ligne.is-danger .param-ligne__texte b { color: #e0352b; }
+.param-pastille { width: 0.6rem; height: 0.6rem; border-radius: 50%; flex: none; }
+.param-pastille--orange { background: #f39c12; }
+.param-pastille--rouge { background: #e0352b; }
+.param-radio { flex: none; width: 1.3rem; height: 1.3rem; border-radius: 50%; border: 2px solid var(--stone); }
+.param-radio.is-on { border-color: #0a7cff; background: radial-gradient(circle, #0a7cff 0 45%, transparent 50%); }
+.param-note { margin: 0 0.3rem; font-size: 0.82rem; color: var(--stone); }
+.param-texte { padding: 0.9rem 1rem; font-size: 0.93rem; line-height: 1.55; }
+.param-texte p { margin: 0 0 0.6rem; }
+.param-texte p:last-child { margin-bottom: 0; }
+.param .param-recherche { margin: 0; padding: 0.65rem 0.9rem; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--ink); font: inherit; }
+.param .notif-bloc { margin: 0; border-radius: 14px; background: var(--surface); }
+.param .samlink-apropos { padding: 1rem 1.1rem; background: var(--surface); border-radius: 14px; }
+@media (max-width: 600px) {
+  .chat-modal:has(.param) { padding: 0; }
+  .chat-modal__box.is-large:has(.param) { width: 100%; height: 100dvh; max-height: 100dvh; border-radius: 0; border: 0; }
+  .param { padding: 0.8rem 0.8rem 1.4rem; }
 }
