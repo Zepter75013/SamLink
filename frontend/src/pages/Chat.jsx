@@ -245,7 +245,7 @@ function ChoixMembres({ members, meId, exclude = [], selected = [], onChange, on
               <AvatarPresence id={m.id} photoUrl={m.photoUrl} nom={`${m.prenom} ${m.nom}`} size={36} />
               <span className="chat-pick__nom">{m.prenom} {m.nom}<PresenceTexte id={m.id} /></span>
               {type && <small className="chat-type"><Mini type={type} femme={m.sexe === 'F'} /></small>}
-              {multiple && <i>{selected.includes(m.id) ? '☑' : '☐'}</i>}
+              {multiple && <i className={`chat-pick__case${selected.includes(m.id) ? ' is-on' : ''}`} aria-hidden="true">{selected.includes(m.id) ? '✓' : ''}</i>}
             </button>
           )
         })}
@@ -298,7 +298,7 @@ function NouvelleDiscussion({ chat, token, me, members, onClose }) {
           <input className="chat-search" placeholder="Nom du salon (ex. Covoiturage Paris-Reims)" maxLength={100} value={nom} onChange={(e) => setNom(e.target.value)} />
           <ChoixMembres members={members} meId={me.id} selected={choisis} onChange={setChoisis} />
           <button type="button" className="btn btn--solid chat-create" disabled={busy || !nom.trim()} onClick={creer}>
-            Créer le salon ({choisis.length + 1} participant{choisis.length ? 's' : ''})
+            Créer le salon · {choisis.length + 1} participant{choisis.length ? 's' : ''}
           </button>
         </>
       )}

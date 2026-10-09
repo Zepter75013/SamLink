@@ -4,6 +4,11 @@
 
 export const CHANGELOG = [
   {
+    version: '1.11.1',
+    date: '9 octobre 2026',
+    notes: "Fenêtre « Nouvelle discussion » plus soignée : photo et nom des adhérents alignés à gauche (le picto d'activité reste à droite), cases à cocher rondes, bouton « Créer le salon · n participants » arrondi sur une seule ligne, avec de l'espace en dessous. Les autres boutons des fenêtres (Ajouter, Envoyer, Enregistrer…) prennent le même style. Aucune migration.",
+  },
+  {
     version: '1.11.0',
     date: '9 octobre 2026',
     notes: "Fond d'écran des discussions, comme WhatsApp : Paramètres › Apparence propose des couleurs (Ciel, Menthe, Lavande, Pêche, Rose, Sable, Ardoise, Rouge Sam), des motifs (Pois, Aurore, Piste) ou ta propre photo, avec un réglage pour l'atténuer ; s'adapte au mode sombre et est mémorisé sur l'appareil. Les boutons de filtre (Toutes, Non lues…) passent à la ligne au lieu d'être coupés sur ordinateur. Aucune migration.",

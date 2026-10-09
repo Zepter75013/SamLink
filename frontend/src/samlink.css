@@ -14,7 +14,19 @@
 .chat-list__exit { display: inline-flex; }
 
 /* Bouton du bas des fenêtres (« Créer le salon », « Ajouter ») : jamais écrasé ni collé au bord quand la liste est longue. */
-.chat-modal__box > .chat-create { flex-shrink: 0; margin-bottom: 1.1rem; }
+/* Boutons des fenêtres : arrondis, sur une ligne, en minuscules (façon Messenger), avec de l'air dessous. */
+.chat-modal__box > .chat-create { flex-shrink: 0; margin: 0.8rem 1rem 1.3rem; }
+.chat-modal__box .btn.chat-create { justify-content: center; min-height: 2.9rem; padding: 0.7rem 1.2rem; border-radius: 999px; font-family: var(--font-body); font-size: 1rem; font-weight: 600; letter-spacing: 0; text-transform: none; line-height: 1.2; text-align: center; }
+.chat-modal__box .btn--solid.chat-create { box-shadow: 0 2px 8px color-mix(in srgb, var(--vermilion) 35%, transparent); }
+.chat-modal__box .btn--solid.chat-create:disabled { box-shadow: none; opacity: 0.45; cursor: default; }
+.chat-modal__box .btn--solid.chat-create:not(:disabled):hover { transform: translateY(-1px); }
+.chat-modal__box .btn--ghost.chat-create { border-color: var(--line); background: var(--surface-2); }
+.chat-modal__box .chat-count { padding: 0.55rem 1rem; }
+/* Choix des adhérents : photo et nom alignés à gauche, le picto d'activité et la case à droite. */
+.chat-pick__row > span.pres-photo { flex: none; min-width: 2.6rem; }
+.chat-pick__row > span.chat-pick__nom { flex: 1; align-items: flex-start; text-align: left; }
+.chat-pick__row i.chat-pick__case { flex: none; display: grid; place-content: center; width: 1.35rem; height: 1.35rem; border: 2px solid var(--stone); border-radius: 50%; color: #fff; font-size: 0.8rem; font-weight: 700; }
+.chat-pick__row i.chat-pick__case.is-on { border-color: var(--vermilion); background: var(--vermilion); }
 
 /* Aide « messages chiffrés » */
 .samlink-aide { padding: 0.6rem 1rem 1.2rem; min-height: 0; overflow-y: auto; overscroll-behavior: contain; font-size: 0.92rem; line-height: 1.6; color: var(--ink-soft); }
